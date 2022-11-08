@@ -20,6 +20,16 @@ Description:
                 extreme customization of the resulting gcode via a language already heavily understood. Additionally users can define (and adjust 
                 real-time) a global geometric transform to scale, rotate, translate GCode programmatically.
 ***
+## Major Features
+* 3D Printer, CNC, and Laser Cutter Compatiable
+* Works with Prusa Slicer, Simplify3d and cura
+* 3D transformation capable for all coordinates (inlcuding extruder)
+    * Scale
+    * Translate
+    * Rotate
+    * Scew
+* Adjust Extruder and Feedrate Multipliers 
+* All GCode parameters exposed, modify anything with your own Javascript run as a post processor
 ## Standards Followed:
 
 * Partial implementation of RS-274
