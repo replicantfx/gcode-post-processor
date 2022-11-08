@@ -1,4 +1,6 @@
 # gcode-post-processor
+## A JavaScript implementation of a GCode (CNC, 3D printer, Laser Cutter) post processor for programmatically adjusting GCode 
+
     _____                _  _                      _    ______ __   __
     |  __ \              | |(_)                    | |  |  ____|\ \ / /
     | |__) |  ___  _ __  | | _   ___   __ _  _ __  | |_ | |__    \ V / 
@@ -18,4 +20,4 @@ Description:
                 extreme customization of the resulting gcode via a language already heavily understood.
                 
                
-A JavaScript implementation of a GCode (CNC, 3D printer, Laser Cutter) post processor for programmatically adjusting GCode 
+
