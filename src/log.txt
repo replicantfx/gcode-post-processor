@@ -1,0 +1,18 @@
+Log File: 07:44:57 Tuesday, Nov 8, 2022
+
+--- Process Started ---
+- Use '-h' for help
+- ARGS: myTest.gcode | null
+
+NOTE: Output file name automatically generated as: "myTest-rfx modified.gcode
+
+Transform set:
+[
+	[0.707	-0.707	0.000	0.000	0.000]
+	[0.707	0.707	0.000	0.000	0.000]
+	[0.000	0.000	1.000	0.000	0.000]
+	[0.000	0.000	0.000	1.000	0.000]
+	[0.000	0.000	0.000	0.000	1.000]
+]
+--- processing complete ---
+

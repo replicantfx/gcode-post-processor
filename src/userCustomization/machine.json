@@ -1,0 +1,30 @@
+{
+    "units":"mm",
+    "axis":{
+        "X":{
+            "home" : 666
+        },
+        "Y":{
+            "home" : 0
+        },
+        "Z":{
+            "home" : 0
+        },
+        "E":{
+            "home" : 0
+        }
+    },
+    "distanceMode":"absolute",
+    "eMode":"absolute",
+    "coordinateSigFig": 4,
+    "extruderSigFig":   6,
+    "feedrateSigFig":   4,
+    "transform":
+    [
+        [0.707,     -0.707,      0,      0,      0],
+        [0.707,     0.707,      0,      0,      0],
+        [0,     0,      1,      0,      0],
+        [0,     0,      0,      1,      0],
+        [0,     0,      0,      0,      1]
+    ]
+}
