@@ -14,7 +14,7 @@ First Release:  6 NOV 2022
 
 Description:
                 This is a gcode post processor for standard and 3D printer flavored gcode.  An input file is processed by this engine
-                and when the engine encounters a <<\<code\>>> section, that code is executed as javascript.  This allows the user
+                and when the engine encounters a <<\<```javascript code```\>>> section, that code is executed as javascript.  This allows the user
                 extreme customization of the resulting gcode via a language already heavily understood.
                 
                
