@@ -23,6 +23,3 @@ Description:
 ## Standards Followed:
 
 * Partial implementation of RS-274
-    
-User Accessible Paramters
-    A, B, C... - ...X, Y, Z     All Uppercase Letters coorispond to GCode Words
