@@ -35,10 +35,10 @@ file will be available to the post processor via "f.<functionName>"
     Effect: None
 */
 exports.tempAtHeight = function(zStart,startValue,step,band){
-    if(m.position.currentCoordinate.Z >= zStart)
+    if(m.position.current.Z >= zStart)
     {
         p.M = 104;
-        p.S = startValue + (step * Math.floor((m.position.currentCoordinate.Z - zStart)/band));
+        p.S = startValue + (step * Math.floor((m.position.current.Z - zStart)/band));
         s.ref.push("M");
         s.ref.push("S");
     }
@@ -76,9 +76,9 @@ exports.tempAtHeight = function(zStart,startValue,step,band){
             output line     G1 X1 Z50 F50;  
 */
 exports.feedrateMultiplyAtHeight = function(zStart,startValue,step,band){
-    if(m.position.currentCoordinate.Z >= zStart)
+    if(m.position.current.Z >= zStart)
     {
-        p.feedrateMultiplier = startValue + (step * Math.floor((m.position.currentCoordinate.Z - zStart)/band));
+        p.feedrateMultiplier = startValue + (step * Math.floor((m.position.current.Z - zStart)/band));
     }
 }
 /*  function extruderMultiplyAtHeight
@@ -114,9 +114,9 @@ exports.feedrateMultiplyAtHeight = function(zStart,startValue,step,band){
             output line     G1 X1 Z50 E50;  
 */
 exports.extruderMultiplyAtHeight = function(zStart,startValue,step,band){
-    if(m.position.currentCoordinate.Z >= zStart)
+    if(m.position.current.Z >= zStart)
     {
-        f.setExtruderMultipler(startValue + (step * Math.floor((m.position.currentCoordinate.Z - zStart)/band)));
+        f.setExtruderMultipler(startValue + (step * Math.floor((m.position.current.Z - zStart)/band)));
     }
 }
 
@@ -131,6 +131,18 @@ exports.setExtruderMultipler = function(value){
 }
 exports.setFeedrateMultipler = function(value){
 
+}
+exports.checkPos = (truth) => {
+    let actualPos = [];
+    let keys = Object.keys(m.axis);
+    for(let i = 0; i < keys.length; i++){
+        actualPos.push(m.position.current[keys[i]]);
+    }
+    for(let i = 0; i < truth.length;i++){
+        if(actualPos[i] != truth[i])
+            return false;
+    }
+    return true;
 }
 exports.init = function(_rfxGlobal){
     p = _rfxGlobal.parameter;

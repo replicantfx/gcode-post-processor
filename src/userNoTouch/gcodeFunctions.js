@@ -16,109 +16,140 @@ let rfxGlobal;
 exports.init = (_rfxGlobal) => {
     rfxGlobal = _rfxGlobal;
 }
-function linearMove(){
+function linearMove() {
     for (key in rfxGlobal.machine.axis) {
+        if (!rfxGlobal.stack.words.hasOwnProperty(key))
+            continue;
         if (key == 'E') {
-            if (rfxGlobal.parameter.eMode == "absolute") {
-                rfxGlobal.machine.position.currentCoordinate[key] = rfxGlobal.parameter[key];
+            if (rfxGlobal.machine.eMode == "absolute") {
+                rfxGlobal.machine.position.current[key] = rfxGlobal.stack.words[key];
             }
             else {
-                rfxGlobal.machine.position.currentCoordinate[key] += rfxGlobal.parameter[key];
+                rfxGlobal.machine.position.current[key] += rfxGlobal.stack.words[key];
                 rfxGlobal.parameter[key] = 0;
             }
         }
         else {
-            if (rfxGlobal.parameter.distanceMode == "absolute") {
-                rfxGlobal.machine.position.currentCoordinate[key] = rfxGlobal.parameter[key];
+            if (rfxGlobal.machine.distanceMode == "absolute") {
+                rfxGlobal.machine.position.current[key] = rfxGlobal.stack.words[key];
             }
             else {
-                rfxGlobal.machine.position.currentCoordinate[key] += rfxGlobal.parameter[key];
+                rfxGlobal.machine.position.current[key] += rfxGlobal.stack.words[key];
                 rfxGlobal.parameter[key] = 0;
             }
         }
         //rfxGlobal.parameter.pos[key] = Math.round(rfxGlobal.parameter.pos[key] * 1000) / 1000;
     }
 }
-exports.G0 = ()=> {
+exports.G0 = () => {
     linearMove();
 }
-exports.G1 = () =>  {
+exports.G1 = () => {
     linearMove();
+}
+exports.G53 = () => {
+    for (key in rfxGlobal.machine.axis) {
+        if (!rfxGlobal.stack.words.hasOwnProperty(key))
+            continue;
+        if (key == 'E') {
+            if (rfxGlobal.machine.eMode == "absolute") {
+                rfxGlobal.machine.position.current[key] = rfxGlobal.stack.words[key] + rfxGlobal.machine.position.origin[key];
+            }
+            else {
+                rfxGlobal.machine.position.current[key] += rfxGlobal.stack.words[key] + rfxGlobal.machine.position.origin[key];
+                rfxGlobal.parameter[key] = 0;
+            }
+        }
+        else {
+            if (rfxGlobal.machine.distanceMode == "absolute") {
+                rfxGlobal.machine.position.current[key] = rfxGlobal.stack.words[key] + rfxGlobal.machine.position.origin[key];
+            }
+            else {
+                rfxGlobal.machine.position.current[key] += rfxGlobal.stack.words[key] + rfxGlobal.machine.position.origin[key];
+                rfxGlobal.parameter[key] = 0;
+            }
+        }
+    }
 }
 exports.G20 = () => {
-    if (rfxGlobal.parameter.units == "mm") {
+    if (rfxGlobal.machine.units == "mm") {
         for (key in rfxGlobal.parameter.pos) {
-            rfxGlobal.machine.currentCoordinate[key] /= 25.4;
-            rfxGlobal.machine.currentCoordinate[key] = Math.round(rfxGlobal.machine.currentCoordinate[key] * 1000) / 1000;
+            rfxGlobal.machine.position.current[key] = Math.round(rfxGlobal.machine.position.current[key] / 25.4 * 1000) / 1000;
+            rfxGlobal.machine.position.origin[key] /= 25.4;
         }
     }
-    rfxGlobal.parameter.units = "in"
+    rfxGlobal.machine.units = "in"
 }
 exports.G21 = () => {
-    if (rfxGlobal.parameter.units == "in") {
+    if (rfxGlobal.machine.units == "in") {
         for (key in rfxGlobal.parameter.pos) {
-            rfxGlobal.parameter.pos[key] *= 25.4;
-            rfxGlobal.parameter.pos[key] = Math.round(rfxGlobal.machine.currentCoordinate[key] * 1000) / 1000;
+            rfxGlobal.parameter.pos[key] = Math.round(rfxGlobal.machine.position.current[key] * 25.4 * 1000) / 1000;
+            rfxGlobal.machine.position.origin[key] *= 25.4;
         }
     }
-    rfxGlobal.parameter.units = "mm"
+    rfxGlobal.machine.units = "mm"
 }
 exports.G28 = () => {
     let found = false;
-    rfxGlobal.writeTo(rfxGlobal.stack)
-    for(key in rfxGlobal.machine.axis){
-        if(rfxGlobal.stack.words)
-        {
-            if(rfxGlobal.stack.words.hasOwnProperty(key)){
+    for (key in rfxGlobal.machine.axis) {
+        if (rfxGlobal.stack.words) {
+            if (rfxGlobal.stack.words.hasOwnProperty(key)) {
                 found = true;
-                if(isNaN(rfxGlobal.stack.words[key]))
-                {
-                    rfxGlobal.machine.currentCoordinate[key] = rfxGlobal.machine.axis[key].home;
+                if (isNaN(rfxGlobal.stack.words[key])) {
+                    rfxGlobal.machine.position.current[key] = rfxGlobal.machine.axis[key].home;
+                    rfxGlobal.machine.position.machine[key] = rfxGlobal.machine.axis[key].home;
+                    rfxGlobal.machine.position.origin[key] = 0;
                 }
-                else
-                {
-                    rfxGlobal.machine.currentCoordinate[key] = rfxGlobal.stack.words[key];
+                else {
+                    rfxGlobal.machine.position.current[key] = rfxGlobal.stack.words[key];
+                    rfxGlobal.machine.position.machine[key] = rfxGlobal.stack.words[key];
+                    rfxGlobal.machine.position.origin[key] = 0;
                 }
             }
         }
     }
-    if(found)
+    if (found)
         return;
-    for (key in rfxGlobal.parameter.pos) 
-    {
-        rfxGlobal.machine.currentCoordinate[key] = rfxGlobal.machine.axis[key].home;
+    for (key in rfxGlobal.machine.position.current) {
+        rfxGlobal.machine.position.current[key] = rfxGlobal.machine.axis[key].home;
+        rfxGlobal.machine.position.origin[key] = 0;
     }
 }
 exports.G90 = () => {
-    rfxGlobal.parameter.distanceMode = "absolute"
+    rfxGlobal.machine.distanceMode = "absolute"
 }
 exports.G91 = () => {
-    rfxGlobal.parameter.distanceMode = "relative"
+    rfxGlobal.machine.distanceMode = "relative"
 }
 exports.G92 = () => {
     let found = false;
-    for(key in rfxGlobal.machine.axis){
-        if(rfxGlobal.stack.words)
-        {
-            if(rfxGlobal.stack.words.hasOwnProperty(key)){
+    for (key in rfxGlobal.machine.axis) {
+        if (rfxGlobal.stack.words) {
+            if (rfxGlobal.stack.words.hasOwnProperty(key)) {
                 found = true;
-                if(isNaN(rfxGlobal.stack.words[key]))
-                {
-                    rfxGlobal.machine.currentCoordinate[key] = rfxGlobal.machine.axis[key].home;
+                if (isNaN(rfxGlobal.stack.words[key])) {
+                    rfxGlobal.machine.position.current[key] = 0;
                 }
-                else
-                {
-                    rfxGlobal.machine.currentCoordinate[key] = rfxGlobal.stack.words[key];
+                else {
+                    rfxGlobal.machine.position.current[key] = rfxGlobal.stack.words[key];
                 }
+                rfxGlobal.machine.position.origin[key] = rfxGlobal.machine.position.current[key] - rfxGlobal.machine.position.machine[key];
             }
         }
     }
+    if (found)
+        return;
+    for (key in rfxGlobal.machine.position.current) {
+        rfxGlobal.machine.position.current[key] = 0;
+        rfxGlobal.machine.position.origin[key] = rfxGlobal.machine.position.current[key] - rfxGlobal.machine.position.machine[key];
+
+    }
 }
 exports.M82 = () => {
-    rfxGlobal.parameter.eMode = "absolute"
+    rfxGlobal.machine.eMode = "absolute"
 }
 exports.M83 = () => {
-    rfxGlobal.parameter.eMode = "relative"
+    rfxGlobal.machine.eMode = "relative"
 }
 // Set Hotend Temperature
 exports.M109 = () => {
@@ -128,25 +159,24 @@ exports.M109 = () => {
 exports.M104 = () => {
     rfxGlobal.parameter.temp["E" + rfxGlobal.parameter.T] = rfxGlobal.parameter.S;
 }
-exports.M117 = ()=> {
+exports.M117 = () => {
     let i = rfxGlobal.stack.command.raw.indexOf("M117");
-    if(i<0)
+    if (i < 0)
         return;
-    let sub = rfxGlobal.stack.command.raw.substring(i+4);
+    let sub = rfxGlobal.stack.command.raw.substring(i + 4);
     let found = false;
     let keys = Object.keys(rfxGlobal.stack.words);
-    for(i = 0; i < keys.length;i++)
-    {
-        if(found){
+    for (i = 0; i < keys.length; i++) {
+        if (found) {
             delete rfxGlobal.stack.words[keys[i]]
             continue;
         }
-        if(keys[i]=='M' && rfxGlobal.stack.words[keys[i]]==117){
+        if (keys[i] == 'M' && rfxGlobal.stack.words[keys[i]] == 117) {
             i--;
             found = true;
         }
     }
-    rfxGlobal.stack.words["M117"+sub] = null;
+    rfxGlobal.stack.words["M117" + sub] = null;
 }
 // Set Hotend Temperature and Wait
 exports.M109 = () => {
@@ -168,3 +198,4 @@ exports.M141 = () => {
 exports.M191 = () => {
     rfxGlobal.parameter.temp["C"] = rfxGlobal.parameter.S;
 }
+

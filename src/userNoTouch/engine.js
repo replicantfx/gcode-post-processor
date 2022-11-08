@@ -60,25 +60,12 @@ rfxGlobal.parameter = {
     X: 0,
     Y: 0,
     Z: 0,
-    units: "mm",
-    distanceMode: "absolute",
-    eMode: "absolute",
     temp: {
         B: 0,
         C: 0,
         E0: 0
     }
 };
-/*
-function toSigFig(input, sigFig) {
-    try {
-        return input.toFixed(sigFig);
-    }
-    catch {
-        return input;
-    }
-}
-*/
 function parseCommand(command_string, result = {}) {
     if(command_string.length==0)
         return result;
@@ -258,14 +245,17 @@ exports.executeLine = function (line) {
     for (let i = 0; i < functionStack.length; i++) {
         
        // try {
-            let fun = new Function("f." + functionStack[i]);
-            fun(rfxGlobal = rfxGlobal, f = gcodeFunction);
+       //eval("gcodeFunction."+functionStack[i])     
+        let fun = new Function("f." + functionStack[i]);
+        fun(rfxGlobal = rfxGlobal, f = gcodeFunction);
         //}
         //catch {
             //rfxGlobal.writeTo("CAUTION: Unprocessed function: " + functionStack[i]);
         //}
     }
-
+    for (key in rfxGlobal.machine.axis) {
+        rfxGlobal.machine.position.machine[key] = rfxGlobal.machine.position.current[key] - rfxGlobal.machine.position.origin[key];
+    }
     let output = "";
     if (rfxGlobal.stack.words) {
         for (key in rfxGlobal.stack.words) {
@@ -375,12 +365,14 @@ exports.init = function (_appData) {
     }
     rfxGlobal.writeTo("]");
     rfxGlobal.machine.position = {
-        "currentCoordinate": {},
-        "machineCoordinate": {}
+        "current": {},
+        "machine": {},
+        "origin" : {}
     };
     for (key in rfxGlobal.machine.axis) {
-        rfxGlobal.machine.position.currentCoordinate[key] = 0;
-        rfxGlobal.machine.position.machineCoordinate[key] = 0;
+        rfxGlobal.machine.position.current[key] = 0;
+        rfxGlobal.machine.position.machine[key] = 0;
+        rfxGlobal.machine.position.origin[key] = 0;
     }
     gcodeFunction.init(rfxGlobal);
     userFunction.init(rfxGlobal);
