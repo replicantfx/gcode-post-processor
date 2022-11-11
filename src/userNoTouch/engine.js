@@ -13,11 +13,12 @@ First Release:  6 NOV 2022
 
 *///#######################################################################
 
+let exports = {};
 // Allow users to create custom functions in a publically accessible way
-const userFunction = require("../userCustomization/userFunctions.js");
+import userFunction from '../userCustomization/userFunctions.js';
 // A prebuild library of gcode functions. G0, G1, G28, G92.... etc....
-const gcodeFunction = require("./gcodeFunctions.js");
-
+//const gcodeFunction = require("./gcodeFunctions.js");
+import gcodeFunction from './gcodeFunctions.js';
 // Regexs used through out the engine
 const regExNumber = /-?(\d+\.?\d*|\d*\.?\d+)\s*/
 const regExCommand = /((?<![A-Za-z])[A-Za-z])\s*/     // Find Single Character not proceeded by another character
@@ -29,10 +30,11 @@ const regExPara = /\((.*?)\)/                       // Find things in ( )
 const regExLine = new RegExp(regExPara.source + '|' + regExString.source + '|' + regExWord.source + '|' + regExCommand.source + '|' + regExNumber.source + '|.', 'g')
 
 let rfxGlobal = {};
-rfxGlobal.machine = require("../userCustomization/machine.json");
-rfxGlobal.stack = {};
 rfxGlobal.appData = {};
-
+import m from '../userCustomization/machine.json' assert {type: 'json'};
+rfxGlobal.machine = JSON.parse(JSON.stringify(m));
+//import rfxGlobal.machine from "../userCustomization/machine.json");
+rfxGlobal.stack = {};
 rfxGlobal.parameter = {
     A: 0,
     B: 0,
@@ -64,21 +66,30 @@ rfxGlobal.parameter = {
         B: 0,
         C: 0,
         E0: 0
-    }
+    },
+    frm: 1,
+    exm: 1,
+    ssm: 1
 };
+function toFixed(input, sigFig) {
+    return Number(input.toFixed(sigFig));
+}
+function execFn(fnName, ctx /*, args */) {
+    // get passed arguments except first two (fnName, ctx)
+    var args = Array.prototype.slice.call(arguments, 2);
+    // execute the function with passed parameters and return result
+    return ctx[fnName].apply(ctx, args);
+}
 function parseCommand(command_string, result = {}) {
-    if(command_string.length==0)
+    if (command_string.length == 0)
         return result;
     let parts = command_string.match(regExLine);
-    for (let i = 0; i < parts.length; i++) {
-
-    }
     for (let i = 0; i < parts.length; i++) {
         if (parts[i] >= 'A' && parts[i] <= 'Z' && parts[i].length == 1) {
             if (i < parts.length - 1) {
                 let n = parseFloat(parts[i + 1]);
                 if (!isNaN(n)) {
-                    result[parts[i]] = n;
+                    result[parts[i]] = toFixed(n, rfxGlobal.machine.sigFig);
                     i++;
                     continue;
                 }
@@ -86,7 +97,6 @@ function parseCommand(command_string, result = {}) {
         }
         result[parts[i]] = NaN;
     }
-    return result;
 }
 function parseLine(line, result) {
     let commentFlag = false;
@@ -133,7 +143,7 @@ function parseLine(line, result) {
                 continue;
             c = c.toUpperCase();
         }
-        result.command.formated += c
+        result.command.formatted += c
     }
     return result;
 }
@@ -149,14 +159,19 @@ function runCode(_inputObject, _userFunction) {
                 _inputObject.stack.ref.push(c);
             }
         }
-    let fun = new Function(_inputObject.stack.code);
-    fun(p = _inputObject.parameter, m = _inputObject.machine, s = _inputObject.stack, f = _userFunction);
-    for (let i = 0; i < _inputObject.stack.ref.length; i++) {
-        let key = _inputObject.stack.ref[i];
-        if (key.length == 1) {
-            rfxGlobal.stack.words[key] = rfxGlobal.parameter[key];
+
+    let fun = new Function('p', 'm', 's', 'f', _inputObject.stack.code);
+    fun(_inputObject.parameter, _inputObject.machine, _inputObject.stack, _userFunction);
+
+    if (_inputObject.stack.ref)
+        for (let i = 0; i < _inputObject.stack.ref.length; i++) {
+            let key = _inputObject.stack.ref[i];
+            if (key.length == 1) {
+                if (typeof (rfxGlobal.parameter[key]) == 'number')
+                    rfxGlobal.parameter[key] = toFixed(rfxGlobal.parameter[key], rfxGlobal.machine.sigFig);
+                rfxGlobal.stack.words[key] = rfxGlobal.parameter[key];
+            }
         }
-    }
 }
 function transformPoint(point, transform) {
     if (!transform)
@@ -180,134 +195,166 @@ function transformPoint(point, transform) {
     }
     return result;
 }
-function isIdentity(input){
-    if(!input)
+function isIdentity(input) {
+    if (!input)
         return false;
-    if(!input.length)
+    if (!input.length)
         return false;
-    if(input.length<=0)
+    if (input.length <= 0)
         return false;
     for (let r = 0; r < input.length; r++) {
-        if(input.length != input.length[r])
+        if (input.length != input.length[r])
             return false;
         for (let c = 0; c < input.length[r]; c++) {
-            if(r==c && input[r][c]!=1)
+            if (r == c && input[r][c] != 1)
                 return false;
-            if(r!=c && input[r][c]!=0)
+            if (r != c && input[r][c] != 0)
                 return false;
         }
     }
     return true;
 }
+/*
+    Input:  String (Pre-processed)
+    Output: String (Post-processed)
+*/
 exports.executeLine = function (line) {
-    if (!rfxGlobal.stack.readingCode)
-    {
-        rfxGlobal.stack.code    = ""
+
+    // If readingCode == true, then this is a multiline code segment.  Else, clear and format the stack variable for a new line
+    if (!rfxGlobal.stack.readingCode) {
+        rfxGlobal.stack.code = ""
         rfxGlobal.stack.command = {
-            "raw":"",
-            "formated":""
+            "raw": "",
+            "formatted": ""
         }
         rfxGlobal.stack.comment = ""
-        rfxGlobal.stack.words   = {}
+        rfxGlobal.stack.words = {}
     }
+    /* Perform the initial formatting and splitting of the input line into components
+        stack.command = 
+        {
+            raw:        ="" if empty, "string containing original command portion of line"
+            formatted:   = "" if empty, "string containing original command portion of line" formatted as: 
+                            - Without whitespaces, 
+                            - All characters Capitalized
+        }
+        stack.comment   = all text after (exclusive) of a ";" character
+        stack.code      = all text between (exlusive) <<< and >>>.  If >>> does not occur on same line, it is assumed to be a multiline code segment
+        stack.readingCode = true if a <<< has occurred on this or a previous line. false if not previously reading code or >>> occurs on the line
+    */
     parseLine(line, rfxGlobal.stack);
+
+    // If reading code, then it is a multiline code block.  Keep reading lines until code closure >>>.  Proceed only with all code within <<< >>> read in.
     if (rfxGlobal.stack.readingCode)
         return null;
-    rfxGlobal.stack.words = parseCommand(rfxGlobal.stack.command.formated);
+
+    // Take the formatted command string and break it into command word/value pairs
+    parseCommand(rfxGlobal.stack.command.formatted, rfxGlobal.stack.words);
+
+    // Copy all stack words into the parameters list for reference by code, prior to execution.
+    // Automatically create new pararmeters if referenced in stack
+    for (let key in rfxGlobal.stack.words) {
+        rfxGlobal.parameter[key] = rfxGlobal.stack.words[key];
+    }
+
+    //##### Process and handle user code in input file #####
+    // If stack has user code, then execute it
     if (rfxGlobal.stack.code) {
+        // initialize stack.words if previously not set
         if (!rfxGlobal.stack.words)
             rfxGlobal.stack.words = {};
-        for (key in rfxGlobal.stack.words) {
-            rfxGlobal.parameter[key] = rfxGlobal.stack.words[key];
-        }
-        if (rfxGlobal.stack.comment)
-            rfxGlobal.parameter.comment = rfxGlobal.stack.comment;
-        if (rfxGlobal.stack.command)
-            rfxGlobal.parameter.command = rfxGlobal.stack.command;
         runCode(rfxGlobal, userFunction);
-        lineModified = true;
     }
-    //######
-    let functionStack = [];
+    //##### Process normal language (GCODE) commands #####
     if (rfxGlobal.stack.words) {
-        for (key in rfxGlobal.stack.words) {
-            if (key.length == 1) {
-                if (key == "G" || key == "M") {
-                    functionStack.push(key + rfxGlobal.stack.words[key] + "()");
-                    continue;
-                }
-                if (rfxGlobal.stack.words[key] && !isNaN(rfxGlobal.stack.words[key]))
-                    rfxGlobal.parameter[key] = rfxGlobal.stack.words[key];
-
+        let functionStack = [];
+        for (let key in rfxGlobal.stack.words) {
+                // Gcode command words are "G" and "M" only.  All other letters are parameters
+            if (key == "G" || key == "M") {
+                functionStack.push(key + rfxGlobal.stack.words[key]);
+                continue;
             }
         }
+        for (let i = 0; i < functionStack.length; i++) {
+            execFn(functionStack[i], gcodeFunction);
+        }
     }
-    for (let i = 0; i < functionStack.length; i++) {
-        
-       // try {
-       //eval("gcodeFunction."+functionStack[i])     
-        let fun = new Function("f." + functionStack[i]);
-        fun(rfxGlobal = rfxGlobal, f = gcodeFunction);
-        //}
-        //catch {
-            //rfxGlobal.writeTo("CAUTION: Unprocessed function: " + functionStack[i]);
-        //}
-    }
-    for (key in rfxGlobal.machine.axis) {
-        rfxGlobal.machine.position.machine[key] = rfxGlobal.machine.position.current[key] - rfxGlobal.machine.position.origin[key];
+    //All user code and GCode functions that could change position have now been executed.  Update machine.position
+    for (let key in rfxGlobal.machine.axis) {
+        rfxGlobal.machine.position[key] = rfxGlobal.parameter.position.current[key] - rfxGlobal.parameter.position.offset[key];
     }
     let output = "";
     if (rfxGlobal.stack.words) {
-        for (key in rfxGlobal.stack.words) {
-            if(!isNaN(rfxGlobal.stack.words[key]))
-                rfxGlobal.parameter[key] = rfxGlobal.stack.words[key];
-        }
-        //######
-        let hasAxisLabel = false;
-        for (key in rfxGlobal.machine.axis) {
-            if (rfxGlobal.stack.words.hasOwnProperty(key)) {
-                hasAxisLabel = true;
-                break;
-            }
-        }
-        let needToTransform = false;
-        if(hasAxisLabel){
-            needToTransform = !isIdentity(rfxGlobal.machine.transform);
-        }
-        if (needToTransform) {
-            let point = [];
-            for (key in rfxGlobal.machine.axis) {
-                point.push(rfxGlobal.parameter[key]);
-            }
-            point.push(1);
-            point = transformPoint(point, rfxGlobal.machine.transform);
-            let i = 0;
-            for (key in rfxGlobal.machine.axis) {
-                if (point[i] != rfxGlobal.parameter[key]) {
-                    rfxGlobal.stack.words[key] = point[i].toFixed(5);
-                }
-                i++;
-            }
-        }
 
-        for (key in rfxGlobal.stack.words) {
-            output += key;
-            if (rfxGlobal.stack.words[key] != null && !isNaN(rfxGlobal.stack.words[key])) {
-                output += rfxGlobal.stack.words[key];
+        // hasFlag allows the program to know if it should apply certian processes.
+        let hasFlag = {
+            coordinate: false,
+            spindle: false,
+            feedrate: false,
+            extruder: false
+        }
+        for (let key in rfxGlobal.stack.words) {
+            if (!isNaN(rfxGlobal.stack.words[key]))
+                rfxGlobal.parameter[key] = rfxGlobal.stack.words[key];
+            if (rfxGlobal.machine.axis.hasOwnProperty(key))
+                hasFlag.coordinate = true;
+            if (key == 'E')
+                hasFlag.extruder = true;
+            if (key == 'F')
+                hasFlag.feedrate = true;
+            if (key == 'M') {
+                if (rfxGlobal.stack.words[key] == 3 || rfxGlobal.stack.words[key] == 4)
+                    hasFlag.spindle  = true;
             }
+        }
+        // If there are coordinates in the stack, we need to apply the transform to these points
+        if (hasFlag.coordinate) {
+            if (!isIdentity(rfxGlobal.machine.transform)) {
+                let point = [];
+                for (let key in rfxGlobal.machine.axis) {
+                    point.push(rfxGlobal.parameter[key]);
+                }
+                // Add one entry to allow for translation in transform matrix
+                point.push(1);
+
+                // Apply the machine coordinate transform
+                point = transformPoint(point, rfxGlobal.machine.transform);
+                let i = 0;
+                for (let key in rfxGlobal.machine.axis) {
+                    rfxGlobal.stack.words[key] = point[i++].toFixed(5);
+                }
+            }
+        }
+        // Feedrate, Extruder, and Spindle multipliers for in-code manipulation of these parameters
+        if (hasFlag.feedrate)
+            rfxGlobal.stack.words.F *= rfxGlobal.parameter.frm;
+        if (hasFlag.extruder)
+            rfxGlobal.stack.words.E *= rfxGlobal.parameter.exm;
+        if (hasFlag.spindle)
+            rfxGlobal.stack.words.S *= rfxGlobal.parameter.ssm;
+
+        // Add all word/value pairs to the output string
+        for (let key in rfxGlobal.stack.words) {
+            // Always add the word
+            output += key;
+            // Only add a value if the value is a real number
+            if (rfxGlobal.stack.words[key] != null && !isNaN(rfxGlobal.stack.words[key]))
+                    output += rfxGlobal.stack.words[key];
+            // Make it pretty by adding a space between commands
             output += " ";
         }
     }
-    //output = output.trim();
+
+    // Add comment to output if there is a comment on the stack
     if (rfxGlobal.stack.comment) {
         output += ";"
         output += rfxGlobal.stack.comment;
     }
-    for (key in rfxGlobal.stack) {
+
+    // Clear the stack in a way that keeps object references intact
+    for (let key in rfxGlobal.stack) {
         delete rfxGlobal.stack[key];
     }
-    if (output.length == 1)
-        return null;
     return output;
 }
 function validateTransform() {
@@ -345,6 +392,21 @@ function createIdentitdyMatrix(n) {
     }
     return result;
 }
+function printMatrix(matrix) {
+    rfxGlobal.writeTo("[");
+    for (let r = 0; r < matrix.length; r++) {
+        let s = "\t[";
+        for (let c = 0; c < matrix[r].length; c++) {
+            if (c != 0)
+                s += "\t";
+            s += matrix[r][c].toFixed(3);
+        }
+        s += "]"
+        rfxGlobal.writeTo(s);
+    }
+    rfxGlobal.writeTo("]");
+}
+
 exports.init = function (_appData) {
     rfxGlobal.writeTo = _appData.writeTo;
     if (!validateTransform()) {
@@ -352,28 +414,22 @@ exports.init = function (_appData) {
         rfxGlobal.writeTo("CAUTION: Transform automatically set to identity matrix:");
     }
     rfxGlobal.writeTo("\nTransform set:");
-    rfxGlobal.writeTo("[");
-    for (let r = 0; r < rfxGlobal.machine.transform.length; r++) {
-        let s = "\t[";
-        for (let c = 0; c < rfxGlobal.machine.transform[r].length; c++) {
-            if (c != 0)
-                s += "\t";
-            s += rfxGlobal.machine.transform[r][c].toFixed(3);
-        }
-        s += "]"
-        rfxGlobal.writeTo(s);
-    }
-    rfxGlobal.writeTo("]");
-    rfxGlobal.machine.position = {
+    printMatrix(rfxGlobal.machine.transform);
+    rfxGlobal.parameter.position = {
         "current": {},
-        "machine": {},
-        "origin" : {}
+        "offset": {}
     };
-    for (key in rfxGlobal.machine.axis) {
-        rfxGlobal.machine.position.current[key] = 0;
-        rfxGlobal.machine.position.machine[key] = 0;
-        rfxGlobal.machine.position.origin[key] = 0;
+    rfxGlobal.machine.position = {}
+    for (let key in rfxGlobal.machine.axis) {
+        rfxGlobal.parameter.position.current[key] = 0;
+        rfxGlobal.parameter.position.offset[key] = 0;
+        rfxGlobal.machine.position[key] = 0;
     }
+    if (!rfxGlobal.machine.units)
+        rfxGlobal.machine.units = "mm";
+    rfxGlobal.parameter.units = rfxGlobal.machine.units;
+
     gcodeFunction.init(rfxGlobal);
     userFunction.init(rfxGlobal);
 }
+export default exports;

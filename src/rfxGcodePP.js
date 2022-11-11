@@ -22,6 +22,7 @@ Note:           1) log.txt file will not be created when executed from 3rd
                    party gcode generators (prusaSlicer...).  Known bug.
 
 *///#######################################################################
+
 const helpString = `
 ################################# HELP ####################################
 
@@ -118,9 +119,11 @@ if (!outputName) {
 }
 //############################
 
-const fs = require('fs');
+import fs from 'fs';
+import engine from './userNoTouch/engine.js';
+//const fs = require('fs');
 //const lineReader = require('line-reader');
-const engine = require("./userNoTouch/engine.js");
+//const engine = require("./userNoTouch/engine.js");
 engine.init(appData);
 
 /*####### Process File #######

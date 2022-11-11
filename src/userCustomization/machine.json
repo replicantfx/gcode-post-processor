@@ -11,14 +11,13 @@
             "home" : 0
         },
         "E":{
-            "home" : 0
+            "home" : 0,
+            "extruder" : null
         }
     },
     "distanceMode":"absolute",
     "eMode":"absolute",
-    "coordinateSigFig": 4,
-    "extruderSigFig":   6,
-    "feedrateSigFig":   4,
+    "sigFig": 4,
     "transform":
     [
         [1,     0,      0,      0,      0],
@@ -26,6 +25,5 @@
         [0,     0,      1,      0,      0],
         [0,     0,      0,      1,      0],
         [0,     0,      0,      0,      1]
-    ],
-    "feedrateChar":"F"
+    ]
 }

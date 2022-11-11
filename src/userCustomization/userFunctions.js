@@ -34,11 +34,13 @@ file will be available to the post processor via "f.<functionName>"
 
     Effect: None
 */
+let exports = {};
+
 exports.tempAtHeight = function(zStart,startValue,step,band){
-    if(m.position.current.Z >= zStart)
+    if(p.position.current.Z >= zStart)
     {
         p.M = 104;
-        p.S = startValue + (step * Math.floor((m.position.current.Z - zStart)/band));
+        p.S = startValue + (step * Math.floor((p.position.current.Z - zStart)/band));
         s.ref.push("M");
         s.ref.push("S");
     }
@@ -76,9 +78,9 @@ exports.tempAtHeight = function(zStart,startValue,step,band){
             output line     G1 X1 Z50 F50;  
 */
 exports.feedrateMultiplyAtHeight = function(zStart,startValue,step,band){
-    if(m.position.current.Z >= zStart)
+    if(p.position.current.Z >= zStart)
     {
-        p.feedrateMultiplier = startValue + (step * Math.floor((m.position.current.Z - zStart)/band));
+        p.frm = startValue + (step * Math.floor((p.position.current.Z - zStart)/band));
     }
 }
 /*  function extruderMultiplyAtHeight
@@ -114,9 +116,9 @@ exports.feedrateMultiplyAtHeight = function(zStart,startValue,step,band){
             output line     G1 X1 Z50 E50;  
 */
 exports.extruderMultiplyAtHeight = function(zStart,startValue,step,band){
-    if(m.position.current.Z >= zStart)
+    if(p.position.current.Z >= zStart)
     {
-        f.setExtruderMultipler(startValue + (step * Math.floor((m.position.current.Z - zStart)/band)));
+        p.exm = startValue + (step * Math.floor((p.position.current.Z - zStart)/band));
     }
 }
 
@@ -125,6 +127,7 @@ exports.extruderMultiplyAtHeight = function(zStart,startValue,step,band){
 //#########################################################################
 //################## WARNING DO NOT TOUCH BELOW THIS LINE #################
 //#########################################################################
+/*
 exports.setExtruderMultipler = function(value){
     let i = Object.keys(m.axis).indexOf("E");
     m.transform[i][i] = value;
@@ -132,26 +135,33 @@ exports.setExtruderMultipler = function(value){
 exports.setFeedrateMultipler = function(value){
 
 }
+*/
 exports.checkPos = (truth) => {
     let actualPos = [];
     let keys = Object.keys(m.axis);
     for(let i = 0; i < keys.length; i++){
-        actualPos.push(m.position.current[keys[i]]);
+        actualPos.push(p.position.current[keys[i]]);
     }
     for(let i = 0; i < truth.length;i++){
-        if(actualPos[i] != truth[i])
+        if(actualPos[i].toFixed(4) != truth[i].toFixed(4))
             return false;
     }
     return true;
+}
+exports.testMath = () =>{
+    p.I = 2;
+    p.J = 3;
+    p.K = p.I * p.J;
 }
 exports.init = function(_rfxGlobal){
     p = _rfxGlobal.parameter;
     m = _rfxGlobal.machine;
     s = _rfxGlobal.stack;
 }
-let m = {};
-let p = {};
-let s = {};
 //NOTE: The following is not used in any way, simply placed here to help 
 //      auto fill/code completion functionality with your editor.  Setting
 //      values here will have no effect. 
+let m = {};
+let p = {};
+let s = {};
+export default exports;

@@ -1,0 +1,1 @@
+[ ] Investigate removing machine coordinates from machine.json.  User should never set directly, rather using origin
