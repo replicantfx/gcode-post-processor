@@ -1,4 +1,4 @@
-;#### Modified by RFX at 08:32:28 Friday, Nov 11, 2022 ####
+;#### Modified by RFX at 19:01:41 Friday, Nov 11, 2022 ####
 ;Just a Commemnt
 G90 ; Set Abolute movement
 ;G21                      Set units mm
@@ -44,3 +44,8 @@ G1 X0.00000 Y0.00000 Z0.00000 E500 F200 ;E=500 F=200
 G1 X0.00000 Y0.00000 Z0.00000 E2000 F50 ;E=2000 F=50
 M3 S50 ;S=50
 M3 S200 ;S=200
+G99 
+G98 
+G98 
+G98 
+G99 

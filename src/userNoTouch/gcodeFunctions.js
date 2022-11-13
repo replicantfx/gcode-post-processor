@@ -134,15 +134,17 @@ exports.G92 = () => {
 
     }
 }
-exports.M3 = () => {}
-exports.M4 = () => {}
-exports.M5 = () => {}
+exports.M3 = () => {
+    rfxGlobal.machine.spindle = 'cw'}
+exports.M4 = () => {
+    rfxGlobal.machine.spindle = 'ccw'}
+exports.M5 = () => {
+    rfxGlobal.machine.spindle = 'off'}
 exports.M82 = () => {
-    rfxGlobal.machine.eMode = "absolute"
-}
+    rfxGlobal.machine.eMode = "absolute"}
 exports.M83 = () => {
-    rfxGlobal.machine.eMode = "relative"
-}
+    rfxGlobal.machine.eMode = "relative"}
+    
 // Set Hotend Temperature
 exports.M109 = () => {
     rfxGlobal.parameter.temp["E" + rfxGlobal.parameter.T] = rfxGlobal.parameter.S;

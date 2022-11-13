@@ -276,7 +276,19 @@ exports.executeLine = function (line) {
             }
         }
         for (let i = 0; i < functionStack.length; i++) {
-            execFn(functionStack[i], gcodeFunction);
+            try{
+                execFn(functionStack[i], gcodeFunction);
+            }
+            catch (err) {
+                // Most likely reason is functon not defined
+                //rfxGlobal.writeTo(err);
+                if(!rfxGlobal.unknownFunctions)
+                    rfxGlobal.unknownFunctions = {};
+                if(!rfxGlobal.unknownFunctions.hasOwnProperty(functionStack[i]))
+                    rfxGlobal.unknownFunctions[functionStack[i]] = 0;
+                rfxGlobal.unknownFunctions[functionStack[i]] += 1;
+                rfxGlobal.writeTo("Unknown Function: "+functionStack[i]+" -> May not be a problem. NOTE processing continued with no parameters changed by this function.")
+            }
         }
     }
     //All user code and GCode functions that could change position have now been executed.  Update machine.position
@@ -355,6 +367,13 @@ exports.executeLine = function (line) {
     for (let key in rfxGlobal.stack) {
         delete rfxGlobal.stack[key];
     }
+    if(rfxGlobal.unknownFunctions){
+        rfxGlobal.writeTo("Unknown functions found")
+        rfxGlobal.writeTo("Func\tQty")
+        for(let key in rfxGlobal.unknownFunctions){
+            rfxGlobal.writeTo(key+"\t"+rfxGlobal.unknownFunctions[key]);
+        }
+    }
     return output;
 }
 function validateTransform() {
@@ -428,6 +447,7 @@ exports.init = function (_appData) {
     if (!rfxGlobal.machine.units)
         rfxGlobal.machine.units = "mm";
     rfxGlobal.parameter.units = rfxGlobal.machine.units;
+    rfxGlobal.machine.spindle = 'off'
 
     gcodeFunction.init(rfxGlobal);
     userFunction.init(rfxGlobal);

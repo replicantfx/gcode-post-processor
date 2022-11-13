@@ -1,4 +1,4 @@
-Log File: 08:32:28 Friday, Nov 11, 2022
+Log File: 19:01:41 Friday, Nov 11, 2022
 
 --- Process Started ---
 - Use '-h' for help
@@ -14,5 +14,29 @@ Transform set:
 	[0.000	0.000	0.000	1.000	0.000]
 	[0.000	0.000	0.000	0.000	1.000]
 ]
+Unknown Function: G99 -> May not be a problem. NOTE processing continued with no parameters changed by this function.
+Unknown functions found
+Func	Qty
+G99	1
+Unknown Function: G98 -> May not be a problem. NOTE processing continued with no parameters changed by this function.
+Unknown functions found
+Func	Qty
+G99	1
+G98	1
+Unknown Function: G98 -> May not be a problem. NOTE processing continued with no parameters changed by this function.
+Unknown functions found
+Func	Qty
+G99	1
+G98	2
+Unknown Function: G98 -> May not be a problem. NOTE processing continued with no parameters changed by this function.
+Unknown functions found
+Func	Qty
+G99	1
+G98	3
+Unknown Function: G99 -> May not be a problem. NOTE processing continued with no parameters changed by this function.
+Unknown functions found
+Func	Qty
+G99	2
+G98	3
 --- processing complete ---
 
