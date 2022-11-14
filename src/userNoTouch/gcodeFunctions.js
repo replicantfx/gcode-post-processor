@@ -52,6 +52,17 @@ exports.G0 = () => {
 exports.G1 = () => {
     linearMove();
 }
+exports.G2 = () => {
+    linearMove();
+}
+exports.G3 = () => {
+    linearMove();
+}
+exports.G4 = () => {
+}
+exports.G5 = () => {
+    linearMove();
+}
 exports.G53 = () => {
     for (let key in rfxGlobal.machine.axis) {
         if (!rfxGlobal.stack.words.hasOwnProperty(key))
@@ -144,14 +155,14 @@ exports.M82 = () => {
     rfxGlobal.machine.eMode = "absolute"}
 exports.M83 = () => {
     rfxGlobal.machine.eMode = "relative"}
-    
-// Set Hotend Temperature
-exports.M109 = () => {
-    rfxGlobal.parameter.temp["E" + rfxGlobal.parameter.T] = rfxGlobal.parameter.S;
-}
+
 // Set Hotend Temperature
 exports.M104 = () => {
-    rfxGlobal.parameter.temp["E" + rfxGlobal.parameter.T] = rfxGlobal.parameter.S;
+    rfxGlobal.parameter.temp["E"] = rfxGlobal.parameter.S;
+}    
+// Set and wait Hotend Temperature
+exports.M109 = () => {
+    rfxGlobal.parameter.temp["E"] = rfxGlobal.parameter.S;
 }
 exports.M117 = () => {
     let i = rfxGlobal.stack.command.raw.indexOf("M117");
@@ -172,10 +183,7 @@ exports.M117 = () => {
     }
     rfxGlobal.stack.words["M117" + sub] = null;
 }
-// Set Hotend Temperature and Wait
-exports.M109 = () => {
-    rfxGlobal.parameter.temp["E" + rfxGlobal.parameter.T] = rfxGlobal.parameter.S;
-}
+
 // Set Bed Temperature
 exports.M140 = () => {
     rfxGlobal.parameter.temp["B"] = rfxGlobal.parameter.S;

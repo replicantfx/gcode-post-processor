@@ -120,6 +120,11 @@ if (!outputName) {
 //############################
 
 import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import path from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 import engine from './userNoTouch/engine.js';
 //const fs = require('fs');
 //const lineReader = require('line-reader');
@@ -150,8 +155,17 @@ fs.readFile(inputName, function (err, data) {
     }
     fs.writeFile(outputName, output, function (err) {
         err || appData.writeTo(`--- processing complete ---\n`);
+        if(appData.unknownFunctions){
+            appData.writeTo("Unknown functions found")
+            appData.writeTo("Func\tQty")
+            for(let key in appData.unknownFunctions){
+                appData.writeTo(key+"\t"+appData.unknownFunctions[key]);
+            }
+        }
         setTimeout(()=>{
-            fs.writeFile("log.txt", appData.log, function (err) {
+            let logPath = __dirname + path.sep+"log.txt";
+            console.log("Log file written to: "+logPath)
+            fs.writeFile(logPath, appData.log, function (err) {
             });
         }, 1000);
     })

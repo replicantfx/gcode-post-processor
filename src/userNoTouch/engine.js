@@ -16,24 +16,22 @@ First Release:  13 NOV 2022
 let exports = {};
 // Allow users to create custom functions in a publically accessible way
 import userFunction from '../userCustomization/userFunctions.js';
+
 // A prebuild library of gcode functions. G0, G1, G28, G92.... etc....
-//const gcodeFunction = require("./gcodeFunctions.js");
 import gcodeFunction from './gcodeFunctions.js';
 // Regexs used through out the engine
-const regExNumber = /-?(\d+\.?\d*|\d*\.?\d+)\s*/
-const regExCommand = /((?<![A-Za-z])[A-Za-z])\s*/     // Find Single Character not proceeded by another character
-const regExWord = /([A-Za-z]+)\s*/                       // Find words combosed of letters only.  Can't have numbers because of how G code represents assignments X# Y# etc...
-const regExString = /(?<!\\)"(.*?)(?<!\\)"/         // Find things in Qoutes
-const regExPara = /\((.*?)\)/                       // Find things in ( )
+
+const MARKER_CODE_START = '<<<';
+const MARKER_CODE_END = '>>>';
+const MARKER_COMMENT = ';';
 
 // Combined regex for command decomposition 
-const regExLine = new RegExp(regExPara.source + '|' + regExString.source + '|' + regExWord.source + '|' + regExCommand.source + '|' + regExNumber.source + '|.', 'g')
 
 let rfxGlobal = {};
 rfxGlobal.appData = {};
-import m from '../userCustomization/machine.json' assert {type: 'json'};
-rfxGlobal.machine = JSON.parse(JSON.stringify(m));
-//import rfxGlobal.machine from "../userCustomization/machine.json");
+import _machine from '../userCustomization/machine.json' assert {type: 'json'};
+rfxGlobal.machine = JSON.parse(JSON.stringify(_machine));
+
 rfxGlobal.stack = {};
 rfxGlobal.parameter = {
     A: 0,
@@ -65,13 +63,16 @@ rfxGlobal.parameter = {
     temp: {
         B: 0,
         C: 0,
-        E0: 0
+        E: 0
     },
     frm: 1,
     exm: 1,
     ssm: 1
 };
-function toFixed(input, sigFig) {
+const sigs = [1,10,100,1000,10000,100000,1000000,10000000,100000000,1000000000];
+function toSigFig(input, sigFig=4) {
+
+    //return Number(Math.round(input*sigs[sigFig])/sigs[sigFig]);
     return Number(input.toFixed(sigFig));
 }
 function execFn(fnName, ctx /*, args */) {
@@ -80,6 +81,14 @@ function execFn(fnName, ctx /*, args */) {
     // execute the function with passed parameters and return result
     return ctx[fnName].apply(ctx, args);
 }
+
+const regExNumber = /-?(\d+\.?\d*|\d*\.?\d+)\s*/
+const regExCommand = /((?<![A-Za-z])[A-Za-z])\s*/     // Find Single Character not proceeded by another character
+const regExWord = /([A-Za-z]+)\s*/                       // Find words combosed of letters only.  Can't have numbers because of how G code represents assignments X# Y# etc...
+const regExString = /(?<!\\)"(.*?)(?<!\\)"/         // Find things in Qoutes
+const regExPara = /\((.*?)\)/                       // Find things in ( )
+const regExLine = new RegExp(regExPara.source + '|' + regExString.source + '|' + regExWord.source + '|' + regExCommand.source + '|' + regExNumber.source + '|.', 'g')
+
 function parseCommand(command_string, result = {}) {
     if (command_string.length == 0)
         return result;
@@ -89,12 +98,13 @@ function parseCommand(command_string, result = {}) {
             if (i < parts.length - 1) {
                 let n = parseFloat(parts[i + 1]);
                 if (!isNaN(n)) {
-                    result[parts[i]] = toFixed(n, rfxGlobal.machine.sigFig);
+                    result[parts[i]] = toSigFig(n, rfxGlobal.machine.sigFig);
                     i++;
                     continue;
                 }
             }
         }
+        // If a word appears, but isn't associated with a value, add the word to the stack and assign NAN
         result[parts[i]] = NaN;
     }
 }
@@ -103,12 +113,12 @@ function parseLine(line, result) {
     let paraFlag = 0;
     let qouteFlag = 0;
     for (let i = 0; i < line.length; i++) {
-        if (line.startsWith('<<<', i)) {
+        if (line.startsWith(MARKER_CODE_START, i)) {
             result.readingCode = true;
             i += 2;
             continue;
         }
-        if (line.startsWith('>>>', i)) {
+        if (line.startsWith(MARKER_CODE_END, i)) {
             result.readingCode = false;
             result.code += ";"
             i += 2;
@@ -121,7 +131,7 @@ function parseLine(line, result) {
                 result.code += line[i];
             continue;
         }
-        if (line[i] == ';') {
+        if (line.startsWith(MARKER_COMMENT, i)) {
             commentFlag = true;
             continue;
         }
@@ -148,8 +158,8 @@ function parseLine(line, result) {
     return result;
 }
 function runCode(_inputObject, _userFunction) {
-    let paraRegEx = /([pms]*\.[A-Za-z]+\s*=)/g;
-    let part = _inputObject.stack.code.match(paraRegEx);
+    // REGEX, match a single letter (p, m, or s), that is not proceeded by a digit or letter, and is followed by a .[one or more letters] =
+    let part = _inputObject.stack.code.match(/((?<!w)[pms]*\.[A-Za-z]+\s*=)/g);
     if (!_inputObject.stack.ref)
         _inputObject.stack["ref"] = [];
     if (part)
@@ -168,7 +178,7 @@ function runCode(_inputObject, _userFunction) {
             let key = _inputObject.stack.ref[i];
             if (key.length == 1) {
                 if (typeof (rfxGlobal.parameter[key]) == 'number')
-                    rfxGlobal.parameter[key] = toFixed(rfxGlobal.parameter[key], rfxGlobal.machine.sigFig);
+                    rfxGlobal.parameter[key] = toSigFig(rfxGlobal.parameter[key], rfxGlobal.machine.sigFig);
                 rfxGlobal.stack.words[key] = rfxGlobal.parameter[key];
             }
         }
@@ -282,12 +292,12 @@ exports.executeLine = function (line) {
             catch (err) {
                 // Most likely reason is functon not defined
                 //rfxGlobal.writeTo(err);
-                if(!rfxGlobal.unknownFunctions)
-                    rfxGlobal.unknownFunctions = {};
-                if(!rfxGlobal.unknownFunctions.hasOwnProperty(functionStack[i]))
-                    rfxGlobal.unknownFunctions[functionStack[i]] = 0;
-                rfxGlobal.unknownFunctions[functionStack[i]] += 1;
-                rfxGlobal.writeTo("Unknown Function: "+functionStack[i]+" -> May not be a problem. NOTE processing continued with no parameters changed by this function.")
+                if(!rfxGlobal.appData.unknownFunctions)
+                    rfxGlobal.appData.unknownFunctions = {};
+                if(!rfxGlobal.appData.unknownFunctions.hasOwnProperty(functionStack[i]))
+                    rfxGlobal.appData.unknownFunctions[functionStack[i]] = 0;
+                rfxGlobal.appData.unknownFunctions[functionStack[i]] += 1;
+                //rfxGlobal.writeTo("Unknown Function: "+functionStack[i]+" -> May not be a problem. NOTE processing continued with no parameters changed by this function.")
             }
         }
     }
@@ -333,7 +343,7 @@ exports.executeLine = function (line) {
                 point = transformPoint(point, rfxGlobal.machine.transform);
                 let i = 0;
                 for (let key in rfxGlobal.machine.axis) {
-                    rfxGlobal.stack.words[key] = point[i++].toFixed(5);
+                    rfxGlobal.stack.words[key] = point[i++];
                 }
             }
         }
@@ -351,7 +361,7 @@ exports.executeLine = function (line) {
             output += key;
             // Only add a value if the value is a real number
             if (rfxGlobal.stack.words[key] != null && !isNaN(rfxGlobal.stack.words[key]))
-                    output += rfxGlobal.stack.words[key];
+                    output += toSigFig(rfxGlobal.stack.words[key], rfxGlobal.machine.sigFig);
             // Make it pretty by adding a space between commands
             output += " ";
         }
@@ -366,13 +376,6 @@ exports.executeLine = function (line) {
     // Clear the stack in a way that keeps object references intact
     for (let key in rfxGlobal.stack) {
         delete rfxGlobal.stack[key];
-    }
-    if(rfxGlobal.unknownFunctions){
-        rfxGlobal.writeTo("Unknown functions found")
-        rfxGlobal.writeTo("Func\tQty")
-        for(let key in rfxGlobal.unknownFunctions){
-            rfxGlobal.writeTo(key+"\t"+rfxGlobal.unknownFunctions[key]);
-        }
     }
     return output;
 }
@@ -418,7 +421,7 @@ function printMatrix(matrix) {
         for (let c = 0; c < matrix[r].length; c++) {
             if (c != 0)
                 s += "\t";
-            s += matrix[r][c].toFixed(3);
+            s += toSigFig(matrix[r][c],3);
         }
         s += "]"
         rfxGlobal.writeTo(s);
@@ -427,6 +430,7 @@ function printMatrix(matrix) {
 }
 
 exports.init = function (_appData) {
+    rfxGlobal.appData = _appData;
     rfxGlobal.writeTo = _appData.writeTo;
     if (!validateTransform()) {
         rfxGlobal.machine.transform = createIdentitdyMatrix(Object.keys(rfxGlobal.machine.axis).length + 1)
