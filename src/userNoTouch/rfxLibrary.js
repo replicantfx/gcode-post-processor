@@ -1,4 +1,5 @@
-let unitConversion = {
+let exports = {};
+exports.unitConversion = {
     mm: {
         mm: 1,
         cm: 1 / 10,
@@ -80,4 +81,63 @@ let unitConversion = {
         miles: 1
     }
 }
-export {unitConversion};
+exports.point3D = [0,0,0,0];
+exports.matrix3D = [
+[1,0,0,0],
+[0,1,0,0],
+[0,0,1,0],
+[0,0,0,1]
+]
+exports.sigs = [1,10,100,1000,10000,100000,1000000,10000000,100000000,1000000000];
+exports.toSigFig = function(input, sigFig=4) {
+    //return Number(Math.round(input*sigs[sigFig])/sigs[sigFig]);
+    return Number(input.toFixed(sigFig));
+}
+exports.execFn = function(fnName, ctx /*, args */) {
+    // get passed arguments except first two (fnName, ctx)
+    var args = Array.prototype.slice.call(arguments, 2);
+    // execute the function with passed parameters and return result
+    return ctx[fnName].apply(ctx, args);
+}
+exports.isIdentity = function(input) {
+    if (!input)
+        return false;
+    if (!input.length)
+        return false;
+    if (input.length <= 0)
+        return false;
+    for (let r = 0; r < input.length; r++) {
+        if (input.length != input.length[r])
+            return false;
+        for (let c = 0; c < input.length[r]; c++) {
+            if (r == c && input[r][c] != 1)
+                return false;
+            if (r != c && input[r][c] != 0)
+                return false;
+        }
+    }
+    return true;
+}
+exports.transformPoint = function(point, transform) {
+    if (!transform)
+        return point;
+    if (!transform.length) {
+        rfxGlobal.writeTo("WARNING: Transform isn't an array, not procssing transform");
+        return point;
+    }
+    if (transform.length != transform[0].length) {
+        rfxGlobal.writeTo("WARNING: Transform isn't square, not processing transform");
+        return point;
+    }
+    let result = [];
+    let r = 0;
+    for (let r = 0; r < point.length; r++) {
+        let n = 0;
+        for (let c = 0; c < point.length; c++) {
+            n += point[c] * transform[r][c];
+        }
+        result.push(n);
+    }
+    return result;
+}
+export default exports;

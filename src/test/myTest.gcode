@@ -1,6 +1,8 @@
-;Just a Commemnt
+;Just a Comment
 G90                     ; Set Abolute movement
-;G21                     ; Set units mm
+;G21
+G999
+G987                     ; Set units mm
 <<<
     console.log("### Checking Home (G28) and Coordinate Set G(92) ###");
     console.log("1: " + f.checkPos([0,0,0,0]));

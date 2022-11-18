@@ -14,8 +14,43 @@ First Release:  6 NOV 2022
 The userFunctions.js file is where you can create custom functions to 
 include in the post processing process. Any function exported from this
 file will be available to the post processor via "f.<functionName>"
-*///#######################################################################
+*/ //#######################################################################
 
+let exports = {};
+/* scale
+    Input:  factor      An array of scale factors, typically [X,Y,Z,E]
+            relative    If true, factor is multiplied with previous value in transform
+                        If false (default), factor overwites existing value in transform
+    Output:
+            None
+
+    Effect: Modifies the machine transform to scale gcode the prescribed amount
+*/
+exports.scale = function (factor, relative = false) {
+  for (let i = 0; i < factor.length; i++) {
+    if (i >= m.transform.length) return;
+    if (i >= m.transform.length[i]) return;
+    if (relative) m.transform[i][i] *= factor[i];
+    else m.transform[i][i] = factor[i];
+  }
+};
+/* translate
+    Input:  factor      An array of translation factors, typically [X,Y,Z,E]
+            relative    If true, factor is added to previous value in transform
+                        If false (default), factor overwites existing value in transform
+    Output:
+            None
+
+    Effect: Modifies the machine transform to translate gcode the prescribed amount
+*/
+exports.translate = function (factor, relative = false) {
+  for (let i = 0; i < factor.length; i++) {
+    if (i >= m.transform.length) return;
+    if (i >= m.transform.length[i]) return;
+    if (relative) m.transform[i][m.transform[i].length-1] += factor[i];
+    else m.transform[i][m.transform[i].length-1] = factor[i];
+  }
+};
 /*  function tempAtHeight
 
         [    ]              }-band    
@@ -34,20 +69,18 @@ file will be available to the post processor via "f.<functionName>"
 
     Effect: None
 */
-let exports = {};
-
-exports.tempAtHeight = function(zStart,startValue,step,band){
-    if(p.position.current.Z >= zStart)
-    {
-        p.M = 104;
-        p.S = startValue + (step * Math.floor((p.position.current.Z - zStart)/band));
-        s.ref.push("M");
-        s.ref.push("S");
-    }
-}
+exports.tempAtHeight = function (zStart, startValue, step, band) {
+  if (p.position.current.Z >= zStart) {
+    p.M = 104;
+    p.S =
+      startValue + step * Math.floor((p.position.current.Z - zStart) / band);
+    s.ref.push("M");
+    s.ref.push("S");
+  }
+};
 /*  function feedrateMultiplyAtHeight
 
-     [    ]              }-band    
+        [    ]              }-band    
         [    ]              }-band    
         [    ]     __zStart }-band    
      ___[####]___  __Bed           
@@ -77,12 +110,12 @@ exports.tempAtHeight = function(zStart,startValue,step,band){
 
             output line     G1 X1 Z50 F50;  
 */
-exports.feedrateMultiplyAtHeight = function(zStart,startValue,step,band){
-    if(p.position.current.Z >= zStart)
-    {
-        p.frm = startValue + (step * Math.floor((p.position.current.Z - zStart)/band));
-    }
-}
+exports.feedrateMultiplyAtHeight = function (zStart, startValue, step, band) {
+  if (p.position.current.Z >= zStart) {
+    p.frm =
+      startValue + step * Math.floor((p.position.current.Z - zStart) / band);
+  }
+};
 /*  function extruderMultiplyAtHeight
 
         [    ]              }-band    
@@ -115,14 +148,12 @@ exports.feedrateMultiplyAtHeight = function(zStart,startValue,step,band){
 
             output line     G1 X1 Z50 E50;  
 */
-exports.extruderMultiplyAtHeight = function(zStart,startValue,step,band){
-    if(p.position.current.Z >= zStart)
-    {
-        p.exm = startValue + (step * Math.floor((p.position.current.Z - zStart)/band));
-    }
-}
-
-
+exports.extruderMultiplyAtHeight = function (zStart, startValue, step, band) {
+  if (p.position.current.Z >= zStart) {
+    p.exm =
+      startValue + step * Math.floor((p.position.current.Z - zStart) / band);
+  }
+};
 
 //#########################################################################
 //################## WARNING DO NOT TOUCH BELOW THIS LINE #################
@@ -137,30 +168,29 @@ exports.setFeedrateMultipler = function(value){
 }
 */
 exports.checkPos = (truth) => {
-    let actualPos = [];
-    let keys = Object.keys(m.axis);
-    for(let i = 0; i < keys.length; i++){
-        actualPos.push(p.position.current[keys[i]]);
-    }
-    for(let i = 0; i < truth.length;i++){
-        if(actualPos[i].toFixed(4) != truth[i].toFixed(4))
-            return false;
-    }
-    return true;
-}
-exports.testMath = () =>{
-    p.I = 2;
-    p.J = 3;
-    p.K = p.I * p.J;
-}
-exports.init = function(_rfxGlobal){
-    p = _rfxGlobal.parameter;
-    m = _rfxGlobal.machine;
-    s = _rfxGlobal.stack;
-}
-//NOTE: The following is not used in any way, simply placed here to help 
+  let actualPos = [];
+  let keys = Object.keys(m.axis);
+  for (let i = 0; i < keys.length; i++) {
+    actualPos.push(p.position.current[keys[i]]);
+  }
+  for (let i = 0; i < truth.length; i++) {
+    if (actualPos[i].toFixed(4) != truth[i].toFixed(4)) return false;
+  }
+  return true;
+};
+exports.testMath = () => {
+  p.I = 2;
+  p.J = 3;
+  p.K = p.I * p.J;
+};
+exports.init = function (_rfxGlobal) {
+  p = _rfxGlobal.parameter;
+  m = _rfxGlobal.machine;
+  s = _rfxGlobal.stack;
+};
+//NOTE: The following is not used in any way, simply placed here to help
 //      auto fill/code completion functionality with your editor.  Setting
-//      values here will have no effect. 
+//      values here will have no effect.
 let m = {};
 let p = {};
 let s = {};

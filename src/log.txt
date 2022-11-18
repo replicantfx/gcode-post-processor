@@ -1,20 +1,16 @@
-Log File: 08:55:53 Monday, Nov 14, 2022
+Log File: 12:03:23 Friday, Nov 18, 2022
 
 --- Process Started ---
 - Use '-h' for help
-- ARGS: ./test/myTest.gcode | null
+- ARGS: test\test1.gcode | null
 
-NOTE: Output file name automatically generated as: "./test/myTest-rfx modified.gcode
+NOTE: Output file name automatically generated as: "test\test1-rfxmodified.gcode
 
 Transform set:
-[
 	[1	0	0	0	0]
 	[0	1	0	0	0]
 	[0	0	1	0	0]
 	[0	0	0	1	0]
 	[0	0	0	0	1]
-]
 --- processing complete ---
-Test 17NOV22
-Back the otherway
 

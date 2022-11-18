@@ -21,7 +21,10 @@ Description:
 Note:           1) log.txt file will not be created when executed from 3rd
                    party gcode generators (prusaSlicer...).  Known bug.
 
-*///#######################################################################
+Repo:           https://github.com/replicantfx/gcode-post-processor
+Website:        http://replicantfx.com
+
+*/ //#######################################################################
 
 const helpString = `
 ################################# HELP ####################################
@@ -55,24 +58,34 @@ Embedding Code:
 
     *///###################################################################
 
-`
+`;
 // Generate a date string for inclusion in resulting modified file
 let date = new Date();
-let dateString = (date.getHours()<10?"0"+date.getHours():date.getHours()) + ":" 
-    + (date.getMinutes()<10?"0"+date.getMinutes():date.getMinutes()) + ":"
-    + (date.getSeconds()<10?"0"+date.getSeconds():date.getSeconds())
-    + " " + date.toLocaleDateString('en-us', { weekday: "long", year: "numeric", month: "short", day: "numeric" });
+let dateString =
+  (date.getHours() < 10 ? "0" + date.getHours() : date.getHours()) +
+  ":" +
+  (date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes()) +
+  ":" +
+  (date.getSeconds() < 10 ? "0" + date.getSeconds() : date.getSeconds()) +
+  " " +
+  date.toLocaleDateString("en-us", {
+    weekday: "long",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 
 // create and preload a log for export to "log.txt".
 
-let appData = {}
-appData.writeTo = function(input, _console = true, _log = true){
-    if(_console)
-        console.log(input)
-    if(_log)
-        appData.log += input + "\n";
-}
-appData.log = "Log File: " + dateString+"\n"
+let appData = {};
+
+// A function to write to the console and to a log file at the same time (options).
+appData.writeTo = function (input, _console = true, _log = true) {
+  if (_console) console.log(input);
+  if (_log) appData.log += input + "\n";
+};
+appData.log = "Log File: " + dateString + "\n";
+
 /*####### Handle Arguments #######
     if --in filename is passed, then set inputName to that
     if --in is not passed, exit on error
@@ -84,51 +97,64 @@ appData.log = "Log File: " + dateString+"\n"
 */
 // argument helper function
 let readArgValue = function (varName) {
-    let varIndex = process.argv.indexOf(varName);
-    if (varIndex > -1) {
-        if (varIndex < process.argv.length - 1)
-            return process.argv[varIndex + 1];
-    }
-    return null;
-}
+  let varIndex = process.argv.indexOf(varName);
+  if (varIndex > -1) {
+    if (varIndex < process.argv.length - 1) return process.argv[varIndex + 1];
+  }
+  return null;
+};
+let inputName = readArgValue("--in");
+let outputName = readArgValue("--out");
 
-let inputName = readArgValue('--in');
-let outputName = readArgValue('--out');
-
-appData.writeTo("\n--- Process Started ---\n- Use '-h' for help\n- ARGS: " + inputName + " | " + outputName+"\n")
-if (process.argv.indexOf('-h') > -1) {
-    appData.writeTo(helpString)
+appData.writeTo(
+  "\n--- Process Started ---\n- Use '-h' for help\n- ARGS: " +
+    inputName +
+    " | " +
+    outputName +
+    "\n"
+);
+if (process.argv.indexOf("-h") > -1) {
+  appData.writeTo(helpString);
 }
 if (!inputName) {
-    appData.writeTo("WARNING: You must specify an input file via --in _____ argument.")
-    appData.writeTo("NOTE: Use -h option for help\n--- Terminating on input error ---")
-    appData.writeTo(appData.log);
-    process.exitCode = 1;
-    process.exit();
+  appData.writeTo(
+    "WARNING: You must specify an input file via --in _____ argument."
+  );
+  appData.writeTo(
+    "NOTE: Use -h option for help\n--- Terminating on input error ---"
+  );
+  appData.writeTo(appData.log);
+  process.exitCode = 1;
+  process.exit();
 }
 if (!outputName) {
-    if (process.argv.indexOf('-o') > -1) {
-        outputName = inputName
-        appData.writeTo("CAUTION: Write input file in place (overwrite input with output: -o) was selected.")
-    }
-    else
-    {
-    outputName = inputName.substring(0, inputName.lastIndexOf('.')) + "-rfx modified" + inputName.substring(inputName.lastIndexOf('.'))
-    appData.writeTo(`NOTE: Output file name automatically generated as: "` + outputName)
-    }
+  if (process.argv.indexOf("-o") > -1) {
+    outputName = inputName;
+    appData.writeTo(
+      "CAUTION: Write input file in place (overwrite input with output: -o) was selected."
+    );
+  } else {
+    outputName =
+      inputName.substring(0, inputName.lastIndexOf(".")) +
+      "-rfxmodified" +
+      inputName.substring(inputName.lastIndexOf("."));
+    appData.writeTo(
+      `NOTE: Output file name automatically generated as: "` + outputName
+    );
+  }
 }
 //############################
+if (typeof process === "object") {
+  //fs = require("fs");
+}
 
-import fs from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import path from 'path';
+import fs from "fs";
+
+import { fileURLToPath } from "url";
+import path from "path";
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-import engine from './userNoTouch/engine.js';
-//const fs = require('fs');
-//const lineReader = require('line-reader');
-//const engine = require("./userNoTouch/engine.js");
+import engine from "./userNoTouch/engine.js";
+
 engine.init(appData);
 
 /*####### Process File #######
@@ -139,39 +165,36 @@ engine.init(appData);
     -when done, write output to outputName file
     -when write complete, create log file and write to it
 */
-fs.readFile(inputName, function (err, data) {
+if (fs) {
+  fs.readFile(inputName, function (err, data) {
     if (err) throw err;
-    let input = data.toString().split(/\r?\n/)
-    let output = ";#### Modified by RFX at "+dateString+" ####\n";
+
+    // Split input into an array at newline
+    let input = data.toString().split(/\r?\n/);
+
+    // Initialize output data.  Preload with modified message
+    let output = ";#### Modified by RFX at " + dateString + " ####\n";
 
     for (let i = 0; i < input.length; i++) {
-        if (!input[i])
-            continue;
-        if (input[i].length < 0)
-            continue;
-        let result = engine.executeLine(input[i]);
-        if (result)
-            output += result + "\n";
+      if (!input[i]) continue;
+      if (input[i].length < 0) continue;
+      let result = engine.executeLine(input[i]);
+      if (result) output += result + "\n";
     }
     fs.writeFile(outputName, output, function (err) {
-        err || appData.writeTo(`--- processing complete ---\n`);
-        if(appData.unknownFunctions){
-            appData.writeTo("Unknown functions found")
-            appData.writeTo("Func\tQty")
-            for(let key in appData.unknownFunctions){
-                appData.writeTo(key+"\t"+appData.unknownFunctions[key]);
-            }
+      err || appData.writeTo(`--- processing complete ---\n`);
+      if (appData.unknownFunctions) {
+        appData.writeTo("Unknown functions found");
+        appData.writeTo("Func\tQty");
+        for (let key in appData.unknownFunctions) {
+          appData.writeTo(key + "\t" + appData.unknownFunctions[key]);
         }
-        setTimeout(()=>{
-            let logPath = __dirname + path.sep+"log.txt";
-            console.log("Log file written to: "+logPath)
-            fs.writeFile(logPath, appData.log, function (err) {
-            });
-        }, 1000);
-    })
-})
-
-
-
-
-
+      }
+      setTimeout(() => {
+        let logPath = path.dirname(__filename) + path.sep + "log.txt";
+        console.log("Log file written to: " + logPath);
+        fs.writeFile(logPath, appData.log, function (err) {});
+      }, 100);
+    });
+  });
+}

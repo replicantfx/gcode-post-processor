@@ -19,8 +19,10 @@ import userFunction from '../userCustomization/userFunctions.js';
 
 // A prebuild library of gcode functions. G0, G1, G28, G92.... etc....
 import gcodeFunction from './gcodeFunctions.js';
-// Regexs used through out the engine
 
+import rfx from './rfxLibrary.js';
+
+// Regexs used through out the engine
 const MARKER_CODE_START = '<<<';
 const MARKER_CODE_END = '>>>';
 const MARKER_COMMENT = ';';
@@ -29,8 +31,14 @@ const MARKER_COMMENT = ';';
 
 let rfxGlobal = {};
 rfxGlobal.appData = {};
+
+
+//import fs from 'fs';
+//rfxGlobal.machine = JSON.parse(fs.readFileSync('../src/userCustomization/machine.json'));
 import _machine from '../userCustomization/machine.json' assert {type: 'json'};
 rfxGlobal.machine = JSON.parse(JSON.stringify(_machine));
+
+
 
 rfxGlobal.stack = {};
 rfxGlobal.parameter = {
@@ -69,18 +77,6 @@ rfxGlobal.parameter = {
     exm: 1,
     ssm: 1
 };
-const sigs = [1,10,100,1000,10000,100000,1000000,10000000,100000000,1000000000];
-function toSigFig(input, sigFig=4) {
-
-    //return Number(Math.round(input*sigs[sigFig])/sigs[sigFig]);
-    return Number(input.toFixed(sigFig));
-}
-function execFn(fnName, ctx /*, args */) {
-    // get passed arguments except first two (fnName, ctx)
-    var args = Array.prototype.slice.call(arguments, 2);
-    // execute the function with passed parameters and return result
-    return ctx[fnName].apply(ctx, args);
-}
 
 const regExNumber = /-?(\d+\.?\d*|\d*\.?\d+)\s*/
 const regExCommand = /((?<![A-Za-z])[A-Za-z])\s*/     // Find Single Character not proceeded by another character
@@ -98,7 +94,7 @@ function parseCommand(command_string, result = {}) {
             if (i < parts.length - 1) {
                 let n = parseFloat(parts[i + 1]);
                 if (!isNaN(n)) {
-                    result[parts[i]] = toSigFig(n, rfxGlobal.machine.sigFig);
+                    result[parts[i]] = rfx.toSigFig(n, rfxGlobal.machine.sigFig);
                     i++;
                     continue;
                 }
@@ -178,52 +174,12 @@ function runCode(_inputObject, _userFunction) {
             let key = _inputObject.stack.ref[i];
             if (key.length == 1) {
                 if (typeof (rfxGlobal.parameter[key]) == 'number')
-                    rfxGlobal.parameter[key] = toSigFig(rfxGlobal.parameter[key], rfxGlobal.machine.sigFig);
+                    rfxGlobal.parameter[key] = rfx.toSigFig(rfxGlobal.parameter[key], rfxGlobal.machine.sigFig);
                 rfxGlobal.stack.words[key] = rfxGlobal.parameter[key];
             }
         }
 }
-function transformPoint(point, transform) {
-    if (!transform)
-        return point;
-    if (!transform.length) {
-        rfxGlobal.writeTo("WARNING: Transform isn't an array, not procssing transform");
-        return point;
-    }
-    if (transform.length != transform[0].length) {
-        rfxGlobal.writeTo("WARNING: Transform isn't square, not processing transform");
-        return point;
-    }
-    let result = [];
-    let r = 0;
-    for (let r = 0; r < point.length; r++) {
-        let n = 0;
-        for (let c = 0; c < point.length; c++) {
-            n += point[c] * transform[r][c];
-        }
-        result.push(n);
-    }
-    return result;
-}
-function isIdentity(input) {
-    if (!input)
-        return false;
-    if (!input.length)
-        return false;
-    if (input.length <= 0)
-        return false;
-    for (let r = 0; r < input.length; r++) {
-        if (input.length != input.length[r])
-            return false;
-        for (let c = 0; c < input.length[r]; c++) {
-            if (r == c && input[r][c] != 1)
-                return false;
-            if (r != c && input[r][c] != 0)
-                return false;
-        }
-    }
-    return true;
-}
+
 /*
     Input:  String (Pre-processed)
     Output: String (Post-processed)
@@ -287,7 +243,7 @@ exports.executeLine = function (line) {
         }
         for (let i = 0; i < functionStack.length; i++) {
             try{
-                execFn(functionStack[i], gcodeFunction);
+                rfx.execFn(functionStack[i], gcodeFunction);
             }
             catch (err) {
                 // Most likely reason is functon not defined
@@ -331,7 +287,7 @@ exports.executeLine = function (line) {
         }
         // If there are coordinates in the stack, we need to apply the transform to these points
         if (hasFlag.coordinate) {
-            if (!isIdentity(rfxGlobal.machine.transform)) {
+            if (!rfx.isIdentity(rfxGlobal.machine.transform)) {
                 let point = [];
                 for (let key in rfxGlobal.machine.axis) {
                     point.push(rfxGlobal.parameter[key]);
@@ -340,7 +296,7 @@ exports.executeLine = function (line) {
                 point.push(1);
 
                 // Apply the machine coordinate transform
-                point = transformPoint(point, rfxGlobal.machine.transform);
+                point = rfx.transformPoint(point, rfxGlobal.machine.transform);
                 let i = 0;
                 for (let key in rfxGlobal.machine.axis) {
                     rfxGlobal.stack.words[key] = point[i++];
@@ -361,7 +317,7 @@ exports.executeLine = function (line) {
             output += key;
             // Only add a value if the value is a real number
             if (rfxGlobal.stack.words[key] != null && !isNaN(rfxGlobal.stack.words[key]))
-                    output += toSigFig(rfxGlobal.stack.words[key], rfxGlobal.machine.sigFig);
+                    output += rfx.toSigFig(rfxGlobal.stack.words[key], rfxGlobal.machine.sigFig);
             // Make it pretty by adding a space between commands
             output += " ";
         }
@@ -415,23 +371,23 @@ function createIdentitdyMatrix(n) {
     return result;
 }
 function printMatrix(matrix) {
-    rfxGlobal.writeTo("[");
     for (let r = 0; r < matrix.length; r++) {
+        
         let s = "\t[";
         for (let c = 0; c < matrix[r].length; c++) {
             if (c != 0)
                 s += "\t";
-            s += toSigFig(matrix[r][c],3);
+            s += rfx.toSigFig(matrix[r][c],3);
         }
         s += "]"
         rfxGlobal.writeTo(s);
     }
-    rfxGlobal.writeTo("]");
 }
 
 exports.init = function (_appData) {
     rfxGlobal.appData = _appData;
     rfxGlobal.writeTo = _appData.writeTo;
+    delete rfxGlobal.appData.unknownFunctions
     if (!validateTransform()) {
         rfxGlobal.machine.transform = createIdentitdyMatrix(Object.keys(rfxGlobal.machine.axis).length + 1)
         rfxGlobal.writeTo("CAUTION: Transform automatically set to identity matrix:");

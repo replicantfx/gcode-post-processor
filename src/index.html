@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>ReplicantFX</title>
+    <link rel="icon" href="public/images/favicon.png?v=2" type="image/x-icon" />
+    <meta
+      name="description"
+      content="This is a gcode post processor for standard and 3D printer 
+      flavored gcode.  An input file is processed by this engine
+      and when the engine encounters a <<<code>>> section, that
+      code is executed as javascript.  This allows the user
+      extreme customization of the resulting gcode via a 
+      language already heavily understood."
+    />
+    <!--<link rel="stylesheet" type="text/css" href="theme.css">
+    -->
+    <link rel="stylesheet" href="./public/css/stackoverflow-dark.min.css" />
+    <script src="./public/js/highlight.min.js"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi"
+      crossorigin="anonymous"
+    />
+    <style>
+      #drop_zone {
+        border: 2px solid rgb(0, 0, 0);
+        width: 100%;
+        height: 300px;
+        overflow: scroll;
+      }
+      #outputFile {
+        border: 2px solid rgb(0, 0, 0);
+        width: 100%;
+        height: 300px;
+        overflow: scroll;
+      }
+      .flex-container {
+        display: flex;
+        justify-content: center;
+      }
+      .flex-col {
+        justify-content: center;
+        padding: 5px;
+        width: 50%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="flex-container" style="padding: 5px">
+      <div class="flex-col" id="leftColumn">
+        <div style="position: relative">
+          <input
+            class="btn btn-primary"
+            style="position: absolute; height: 35px; width: 100%"
+            type="button"
+            id="inputBtn"
+            value="Input"
+            onclick="document.getElementById('files').click();"
+          />
+          <input
+            class="form-control form-control-sm"
+            style="height: 35px"
+            type="file"
+            id="files"
+            name="files[]"
+            single
+          />
+        </div>
+        <pre><code class="language-plaintext" id="drop_zone" style="margin-top: 5px; margin-bottom: 5px; padding: 5px;word-wrap: break-word">
+          Drop File Here</code></pre>
+      </div>
+      <div class="flex-col" id="rightColumn">
+        <input
+          class="btn btn-success"
+          style="height: 35px; width: 100%"
+          type="button"
+          id="downloadBtn"
+          value="Download"
+          disabled
+        />
+        <pre><code class="language-gcode" id="outputFile"
+            style="margin-top: 5px; margin-bottom: 5px; padding: 5px;word-wrap: break-word">
+          </code></pre>
+      </div>
+    </div>
+  </body>
+  <script type="module">
+    let appData = {};
+    // A function to write to the console and to a log file at the same time (options).
+    appData.writeTo = function (input, _console = true, _log = true) {
+      if (_console) console.log(input);
+      if (_log) appData.log += input + "\n";
+    };
+    import index from "./index.js";
+    import engine from "./userNoTouch/engine.js";
+    function handleFileDrop(evt) {
+      evt.stopPropagation();
+      evt.preventDefault();
+
+      let files = evt.dataTransfer.files; // FileList object.
+      handleNewFiles(files);
+    }
+    function handleDragOver(evt) {
+      evt.stopPropagation();
+      evt.preventDefault();
+      evt.dataTransfer.dropEffect = "copy"; // Explicitly show this is a copy.
+    }
+
+    function handleFileSelect(evt) {
+      let files = evt.target.files; // FileList object
+      handleNewFiles(files);
+    }
+
+    //Add Drag and Drop Event Listeners
+    let dropZone = document.getElementById("drop_zone");
+    dropZone.addEventListener("dragover", handleDragOver, false);
+    dropZone.addEventListener("drop", handleFileDrop, false);
+
+    //Add File Browse Event Listeners
+    document
+      .getElementById("files")
+      .addEventListener("change", handleFileSelect, false);
+    let outputName = "";
+    //Handle and process the file
+
+    function handleNewFiles(files) {
+      if (files.length > 0) {
+        let file = files[0];
+        let inputName = file.name;
+        appData.log = "";
+        engine.init(appData);
+        outputName =
+          inputName.substring(0, inputName.lastIndexOf(".")) +
+          "-rfxmodified" +
+          inputName.substring(inputName.lastIndexOf("."));
+
+        let reader = new FileReader();
+        reader.addEventListener("loadend", () => {
+          let data = reader.result;
+          document.getElementById("drop_zone").innerHTML = data;
+          let input = data.toString().split(/\r?\n/);
+
+          // Initialize output data.  Preload with modified message
+          let output = "";
+          for (let i = 0; i < input.length; i++) {
+            if (!input[i]) continue;
+            if (input[i].length < 0) continue;
+
+            let result = engine.executeLine(input[i]);
+            if (result) output += result + "\n";
+          }
+          let preText =
+            ";#### Modified by RFX at " + index.dateString() + " ####\n";
+          let outputElement = document.getElementById("outputFile");
+
+          let log = appData.log.split(/\r?\n/);
+          for (let i = 0; i < log.length; i++) {
+            if (log[i] != "undefined") {
+              preText += ";" + log[i] + "\n";
+            }
+          }
+          if (appData.unknownFunctions) {
+            preText += ";Unknown functions found\n;\tFunc\t\tQty\n";
+            for (let key in appData.unknownFunctions) {
+              preText +=
+                ";\t" + key + "\t\t" + appData.unknownFunctions[key] + "\n";
+            }
+            preText += ";\n";
+          }
+          output = preText + ";#### Begin Code ####\n;\n" + output;
+          outputElement.innerHTML = output;
+          document.getElementById("downloadBtn").disabled = false;
+
+          hljs.highlightAll();
+        });
+        reader.readAsText(file);
+      }
+    }
+    function download(filename, textInput) {
+      var element = document.createElement("a");
+      element.setAttribute(
+        "href",
+        "data:text/plain;charset=utf-8, " + encodeURIComponent(textInput)
+      );
+      element.setAttribute("download", filename);
+      document.body.appendChild(element);
+      element.click();
+      //document.body.removeChild(element);
+    }
+    document.getElementById("downloadBtn").addEventListener(
+      "click",
+      function () {
+        var text = document.getElementById("outputFile").innerText;
+        var filename = outputName;
+        download(filename, text);
+      },
+      false
+    );
+  </script>
+
+  <script>
+    hljs.highlightAll();
+  </script>
+</html>

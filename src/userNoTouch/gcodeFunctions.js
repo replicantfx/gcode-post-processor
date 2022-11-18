@@ -13,8 +13,8 @@ First Release:  6 NOV 2022
 
 *///#######################################################################
 let rfxGlobal;
-// unitConversion[A][B] Factor to convert from units A to units B 
-import {unitConversion} from './rfxLibrary.js';
+// rfx.unitConversion[A][B] Factor to convert from units A to units B 
+import rfx from './rfxLibrary.js';
 let exports = {};
 exports.init = (_rfxGlobal) => {
     rfxGlobal = _rfxGlobal;
@@ -23,7 +23,7 @@ function checkIfArray(array) {
     return (Array.isArray(array) === true && !array.length);
 }
 function setCurrentPositionViaKey(key, value, mode = 'absolute', units = rfxGlobal.parameter.units) {
-    let scale = unitConversion[units][rfxGlobal.parameter.units]
+    let scale = rfx.unitConversion[units][rfxGlobal.parameter.units]
     if (mode == 'absolute') {
         rfxGlobal.parameter.position.current[key] = value * scale;
     }
