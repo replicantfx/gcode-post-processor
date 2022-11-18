@@ -33,3 +33,7 @@ Description:
 ## Standards Followed:
 
 * Partial implementation of RS-274
+
+## Instructions / Getting Started
+
+Please see: https://github.com/replicantfx/gcode-post-processor/wiki
