@@ -155,7 +155,7 @@ import path from "path";
 const __filename = fileURLToPath(import.meta.url);
 import engine from "./userNoTouch/engine.js";
 
-engine.init(appData);
+//engine.init(appData);
 
 /*####### Process File #######
     -read input file into an input buffer (array of lines)
@@ -168,33 +168,9 @@ engine.init(appData);
 if (fs) {
   fs.readFile(inputName, function (err, data) {
     if (err) throw err;
-
-    // Split input into an array at newline
-    let input = data.toString().split(/\r?\n/);
-
-    // Initialize output data.  Preload with modified message
-    let output = ";#### Modified by RFX at " + dateString + " ####\n";
-
-    for (let i = 0; i < input.length; i++) {
-      if (!input[i]) continue;
-      if (input[i].length < 0) continue;
-      let result = engine.executeLine(input[i]);
-      if (result) output += result + "\n";
-    }
+    let output = engine.processAll(data);
     fs.writeFile(outputName, output, function (err) {
-      err || appData.writeTo(`--- processing complete ---\n`);
-      if (appData.unknownFunctions) {
-        appData.writeTo("Unknown functions found");
-        appData.writeTo("Func\tQty");
-        for (let key in appData.unknownFunctions) {
-          appData.writeTo(key + "\t" + appData.unknownFunctions[key]);
-        }
-      }
-      setTimeout(() => {
-        let logPath = path.dirname(__filename) + path.sep + "log.txt";
-        console.log("Log file written to: " + logPath);
-        fs.writeFile(logPath, appData.log, function (err) {});
-      }, 100);
+      err || console.log("Success")
     });
   });
 }

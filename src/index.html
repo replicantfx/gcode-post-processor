@@ -89,13 +89,14 @@
     </div>
   </body>
   <script type="module">
-    let appData = {};
+    /*let appData = {};
     // A function to write to the console and to a log file at the same time (options).
     appData.writeTo = function (input, _console = true, _log = true) {
       if (_console) console.log(input);
       if (_log) appData.log += input + "\n";
     };
     import index from "./index.js";
+    */
     import engine from "./userNoTouch/engine.js";
     function handleFileDrop(evt) {
       evt.stopPropagation();
@@ -131,8 +132,8 @@
       if (files.length > 0) {
         let file = files[0];
         let inputName = file.name;
-        appData.log = "";
-        engine.init(appData);
+        //appData.log = "";
+        //engine.init(appData);
         outputName =
           inputName.substring(0, inputName.lastIndexOf(".")) +
           "-rfxmodified" +
@@ -142,37 +143,7 @@
         reader.addEventListener("loadend", () => {
           let data = reader.result;
           document.getElementById("drop_zone").innerHTML = data;
-          let input = data.toString().split(/\r?\n/);
-
-          // Initialize output data.  Preload with modified message
-          let output = "";
-          for (let i = 0; i < input.length; i++) {
-            if (!input[i]) continue;
-            if (input[i].length < 0) continue;
-
-            let result = engine.executeLine(input[i]);
-            if (result) output += result + "\n";
-          }
-          let preText =
-            ";#### Modified by RFX at " + index.dateString() + " ####\n";
-          let outputElement = document.getElementById("outputFile");
-
-          let log = appData.log.split(/\r?\n/);
-          for (let i = 0; i < log.length; i++) {
-            if (log[i] != "undefined") {
-              preText += ";" + log[i] + "\n";
-            }
-          }
-          if (appData.unknownFunctions) {
-            preText += ";Unknown functions found\n;\tFunc\t\tQty\n";
-            for (let key in appData.unknownFunctions) {
-              preText +=
-                ";\t" + key + "\t\t" + appData.unknownFunctions[key] + "\n";
-            }
-            preText += ";\n";
-          }
-          output = preText + ";#### Begin Code ####\n;\n" + output;
-          outputElement.innerHTML = output;
+          document.getElementById("outputFile").innerHTML = engine.processAll(data);
           document.getElementById("downloadBtn").disabled = false;
 
           hljs.highlightAll();
