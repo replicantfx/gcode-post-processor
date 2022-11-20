@@ -21,9 +21,9 @@ Description:
                 real-time) a global geometric transform to scale, rotate, translate GCode programmatically.
 ***
 ## Major Features
-* 3D Printer, CNC, and Laser Cutter Compatiable
+* 3D Printer, CNC, and Laser Cutter Compatable
 * Works with Prusa Slicer, Simplify3d and cura
-* 3D transformation capable for all coordinates (inlcuding extruder)
+* 3D transformation capable for all coordinates (including extruder)
     * Scale
     * Translate
     * Rotate
@@ -33,3 +33,7 @@ Description:
 ## Standards Followed:
 
 * Partial implementation of RS-274
+
+## Instructions / Getting Started
+
+Please see: https://github.com/replicantfx/gcode-post-processor/wiki
