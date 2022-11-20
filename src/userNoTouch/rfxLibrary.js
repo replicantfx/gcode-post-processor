@@ -158,4 +158,18 @@ exports.dateString = () => {
     })
   );
 };
+
+exports.printMatrix = (matrix, pre = '')=>{
+    let output = "";
+    for (let r = 0; r < matrix.length; r++) {
+      let s = pre+"\t[";
+      for (let c = 0; c < matrix[r].length; c++) {
+        if (c != 0) s += "\t";
+        s += exports.toSigFig(matrix[r][c], 3);
+      }
+      s += "]\n";
+      output +=s;
+    }
+    return output;
+  }
 export default exports;

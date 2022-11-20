@@ -200,8 +200,5 @@ exports.M141 = () => {
 exports.M191 = () => {
     rfxGlobal.parameter.temp["C"] = rfxGlobal.parameter.S;
 }
-exports.G999 = () =>{
-    rfxGlobal.parameter.K = 999
-}
 export default exports;
 

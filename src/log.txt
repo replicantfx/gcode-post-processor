@@ -1,7 +1,0 @@
-Log File: 11:35:19 Sunday, Nov 20, 2022
-
---- Process Started ---
-- Use '-h' for help
-- ARGS: test\test1.gcode | null
-
-NOTE: Output file name automatically generated as: "test\test1-rfxmodified.gcode

@@ -12,7 +12,6 @@ Created by:     Emily A Shilling
 First Release:  13 NOV 2022
 
 */ //#######################################################################
-
 let exports = {};
 // Allow users to create custom functions in a publically accessible way
 import userFunction from "../userCustomization/userFunctions.js";
@@ -30,12 +29,36 @@ const MARKER_COMMENT = ";";
 // Combined regex for command decomposition
 let unknownFunctions = {};
 let rfxGlobal = {};
-rfxGlobal.appData = {};
 
-//import fs from 'fs';
-//rfxGlobal.machine = JSON.parse(fs.readFileSync('../src/userCustomization/machine.json'));
-import _machine from "../userCustomization/machine.json" assert { type: "json" };
-rfxGlobal.machine = JSON.parse(JSON.stringify(_machine));
+//import _machine from "../userCustomization/machine.json" assert { type: "json" };
+rfxGlobal.machine = {
+  units: "mm",
+  axis: {
+    X: {
+      home: 0,
+    },
+    Y: {
+      home: 0,
+    },
+    Z: {
+      home: 0,
+    },
+    E: {
+      home: 0,
+      extruder: null,
+    },
+  },
+  distanceMode: "absolute",
+  eMode: "absolute",
+  sigFig: 4,
+  transform: [
+    [1, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0],
+    [0, 0, 1, 0, 0],
+    [0, 0, 0, 1, 0],
+    [0, 0, 0, 0, 1],
+  ],
+};
 
 rfxGlobal.stack = {};
 rfxGlobal.parameter = {
@@ -93,7 +116,13 @@ const regExLine = new RegExp(
     "|.",
   "g"
 );
-
+exports.getOutputName = function (inputName) {
+  return (
+    inputName.substring(0, inputName.lastIndexOf(".")) +
+    "-rfxmodified" +
+    inputName.substring(inputName.lastIndexOf("."))
+  );
+};
 function parseCommand(command_string, result = {}) {
   if (command_string.length == 0) return result;
   let parts = command_string.match(regExLine);
@@ -387,17 +416,6 @@ function createIdentitdyMatrix(n) {
   }
   return result;
 }
-function printMatrix(matrix) {
-  for (let r = 0; r < matrix.length; r++) {
-    let s = "\t[";
-    for (let c = 0; c < matrix[r].length; c++) {
-      if (c != 0) s += "\t";
-      s += rfx.toSigFig(matrix[r][c], 3);
-    }
-    s += "]";
-    rfxGlobal.writeTo(s);
-  }
-}
 
 exports.init = function () {};
 exports.processAll = function (data) {
@@ -436,23 +454,23 @@ exports.processAll = function (data) {
     );
     preBody += "; CAUTION: Transform automatically set to identity matrix:\n";
   }
-  preBody += ";\n; Transform set:\n";
-  for (let r = 0; r < rfxGlobal.machine.transform.length; r++) {
-    let s = ";\t[";
-    for (let c = 0; c < rfxGlobal.machine.transform[r].length; c++) {
-      s += "\t";
-      s += rfx.toSigFig(rfxGlobal.machine.transform[r][c], 3);
-    }
-    s += "]\n";
-    preBody += s;
-  }
 
   //##### Process lines #####
+  let first = true;
   for (let i = 0; i < input.length; i++) {
     if (!input[i]) continue;
     if (input[i].length < 0) continue;
     let result = exports.executeLine(input[i]);
-    if (result) body += result + "\n";
+    if (result) {
+      if(first){
+        if(!result.startsWith(";")){
+          first = false;
+          preBody += ";\n; Transform set:\n";
+          preBody += rfx.printMatrix(rfxGlobal.machine.transform,";");
+        }
+      }
+      body += result + "\n";
+    }
   }
 
   //##### Build Output #####

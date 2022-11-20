@@ -18,7 +18,8 @@
     <!--<link rel="stylesheet" type="text/css" href="theme.css">
     -->
     <link rel="stylesheet" href="./public/css/stackoverflow-dark.min.css" />
-    <script src="./public/js/highlight.min.js"></script>
+
+    <script src="./index.js" type="module"></script>
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"
       rel="stylesheet"
@@ -47,15 +48,25 @@
         padding: 5px;
         width: 50%;
       }
+      #inputBtn{
+            position: absolute;
+            height: 35px; 
+            width: 100%
+      }
+      #file{
+        height: 35px
+      }
+      code{
+        margin-top: 5px; margin-bottom: 5px; padding: 5px;word-wrap: break-word
+      }
     </style>
   </head>
   <body>
     <div class="flex-container" style="padding: 5px">
       <div class="flex-col" id="leftColumn">
-        <div style="position: relative">
+        <div style="position: relative; height:35px">
           <input
             class="btn btn-primary"
-            style="position: absolute; height: 35px; width: 100%"
             type="button"
             id="inputBtn"
             value="Input"
@@ -63,14 +74,15 @@
           />
           <input
             class="form-control form-control-sm"
-            style="height: 35px"
             type="file"
+            title="File Input"
+            placeholder=""
             id="files"
             name="files[]"
             single
           />
         </div>
-        <pre><code class="language-plaintext" id="drop_zone" style="margin-top: 5px; margin-bottom: 5px; padding: 5px;word-wrap: break-word">
+        <pre><code class="language-plaintext" id="drop_zone">
           Drop File Here</code></pre>
       </div>
       <div class="flex-col" id="rightColumn">
@@ -82,98 +94,8 @@
           value="Download"
           disabled
         />
-        <pre><code class="language-gcode" id="outputFile"
-            style="margin-top: 5px; margin-bottom: 5px; padding: 5px;word-wrap: break-word">
-          </code></pre>
+        <pre><code class="language-gcode" id="outputFile"></code></pre>
       </div>
     </div>
   </body>
-  <script type="module">
-    /*let appData = {};
-    // A function to write to the console and to a log file at the same time (options).
-    appData.writeTo = function (input, _console = true, _log = true) {
-      if (_console) console.log(input);
-      if (_log) appData.log += input + "\n";
-    };
-    import index from "./index.js";
-    */
-    import engine from "./userNoTouch/engine.js";
-    function handleFileDrop(evt) {
-      evt.stopPropagation();
-      evt.preventDefault();
-
-      let files = evt.dataTransfer.files; // FileList object.
-      handleNewFiles(files);
-    }
-    function handleDragOver(evt) {
-      evt.stopPropagation();
-      evt.preventDefault();
-      evt.dataTransfer.dropEffect = "copy"; // Explicitly show this is a copy.
-    }
-
-    function handleFileSelect(evt) {
-      let files = evt.target.files; // FileList object
-      handleNewFiles(files);
-    }
-
-    //Add Drag and Drop Event Listeners
-    let dropZone = document.getElementById("drop_zone");
-    dropZone.addEventListener("dragover", handleDragOver, false);
-    dropZone.addEventListener("drop", handleFileDrop, false);
-
-    //Add File Browse Event Listeners
-    document
-      .getElementById("files")
-      .addEventListener("change", handleFileSelect, false);
-    let outputName = "";
-    //Handle and process the file
-
-    function handleNewFiles(files) {
-      if (files.length > 0) {
-        let file = files[0];
-        let inputName = file.name;
-        //appData.log = "";
-        //engine.init(appData);
-        outputName =
-          inputName.substring(0, inputName.lastIndexOf(".")) +
-          "-rfxmodified" +
-          inputName.substring(inputName.lastIndexOf("."));
-
-        let reader = new FileReader();
-        reader.addEventListener("loadend", () => {
-          let data = reader.result;
-          document.getElementById("drop_zone").innerHTML = data;
-          document.getElementById("outputFile").innerHTML = engine.processAll(data);
-          document.getElementById("downloadBtn").disabled = false;
-
-          hljs.highlightAll();
-        });
-        reader.readAsText(file);
-      }
-    }
-    function download(filename, textInput) {
-      var element = document.createElement("a");
-      element.setAttribute(
-        "href",
-        "data:text/plain;charset=utf-8, " + encodeURIComponent(textInput)
-      );
-      element.setAttribute("download", filename);
-      document.body.appendChild(element);
-      element.click();
-      //document.body.removeChild(element);
-    }
-    document.getElementById("downloadBtn").addEventListener(
-      "click",
-      function () {
-        var text = document.getElementById("outputFile").innerText;
-        var filename = outputName;
-        download(filename, text);
-      },
-      false
-    );
-  </script>
-
-  <script>
-    hljs.highlightAll();
-  </script>
 </html>
