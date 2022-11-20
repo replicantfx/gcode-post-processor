@@ -1,29 +1,25 @@
 {
   "name": "rfx-gcode-post-processor",
-    "version": "0.1.0",
-    "description": "A JavaScript implementation of a GCode (CNC, 3D printer, Laser Cutter) post processor for programmatically adjusting GCode via inline-JavaScript and global transformations",
-    "author": "Emily Shilling @ ReplicantFX",
-    "license": "GPL-3.0",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/replicantfx/gcode-post-processor.git"
-    },
-    "bugs": {
-        "url": "https://github.com/replicantfx/gcode-post-processor/issues"
-    },
-    "homepage": "https://replicantfx.com/",
-      "main": "index.js",
+  "version": "0.1.0",
+  "description": "A JavaScript implementation of a GCode (CNC, 3D printer, Laser Cutter) post processor for programmatically adjusting GCode via inline-JavaScript and global transformations",
+  "author": "Emily Shilling @ ReplicantFX",
+  "license": "GPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/replicantfx/gcode-post-processor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/replicantfx/gcode-post-processor/issues"
+  },
+  "homepage": "https://replicantfx.com/",
+  "main": "src/index.js",
   "private": true,
   "type": "module",
   "directories": {
     "test": "test"
   },
+  "keywords": [],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "devDependencies": {
-    "webpack": "^5.75.0",
-    "webpack-cli": "^5.0.0"
   }
 }
