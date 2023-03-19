@@ -45,7 +45,7 @@ rfxGlobal.machine = {
     },
     E: {
       home: 0,
-      extruder: null,
+      extruder: true,
     },
   },
   distanceMode: "absolute",
@@ -234,6 +234,14 @@ exports.executeLine = function (line) {
     rfxGlobal.stack.comment = "";
     rfxGlobal.stack.words = {};
   }
+  
+  for (let key in rfxGlobal.machine.axis) {
+    rfxGlobal.parameter[key] = 0;
+    if((rfxGlobal.machine.axis[key].extruder && rfxGlobal.machine.eMode == 'relative') || 
+    (!rfxGlobal.machine.axis[key].extruder && rfxGlobal.machine.distanceMode == 'relative') ){
+      rfxGlobal.parameter[key] = 0
+  }
+}
   /* Perform the initial formatting and splitting of the input line into components
         stack.command = 
         {
@@ -246,6 +254,7 @@ exports.executeLine = function (line) {
         stack.code      = all text between (exlusive) <<< and >>>.  If >>> does not occur on same line, it is assumed to be a multiline code segment
         stack.readingCode = true if a <<< has occurred on this or a previous line. false if not previously reading code or >>> occurs on the line
     */
+
   parseLine(line, rfxGlobal.stack);
 
   // If reading code, then it is a multiline code block.  Keep reading lines until code closure >>>.  Proceed only with all code within <<< >>> read in.
@@ -297,6 +306,12 @@ exports.executeLine = function (line) {
     rfxGlobal.machine.position[key] =
       rfxGlobal.parameter.position.current[key] -
       rfxGlobal.parameter.position.offset[key];
+      /*
+    if((rfxGlobal.machine.axis[key].extruder && rfxGlobal.machine.eMode != 'absolute') || 
+       (!rfxGlobal.machine.axis[key].extruder && rfxGlobal.machine.distanceMode != 'absolute')){
+      rfxGlobal.parameter.position.current[key] = 0;
+    }
+    rfxGlobal.parameter.position.current[key] = 0;*/
   }
   let output = "";
   if (rfxGlobal.stack.words) {
