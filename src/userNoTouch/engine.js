@@ -236,7 +236,6 @@ exports.executeLine = function (line) {
   }
   
   for (let key in rfxGlobal.machine.axis) {
-    rfxGlobal.parameter[key] = 0;
     if((rfxGlobal.machine.axis[key].extruder && rfxGlobal.machine.eMode == 'relative') || 
     (!rfxGlobal.machine.axis[key].extruder && rfxGlobal.machine.distanceMode == 'relative') ){
       rfxGlobal.parameter[key] = 0
